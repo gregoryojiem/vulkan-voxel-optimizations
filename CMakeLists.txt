@@ -13,7 +13,12 @@ add_library(glfw STATIC IMPORTED)
 set_target_properties(glfw PROPERTIES
         IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glfw-3.4.bin.WIN64/lib-mingw-w64/libglfw3.a")
 
-add_executable(vulkan_voxel src/rendering/main.cpp)
+add_executable(vulkan_voxel src/rendering/main.cpp
+        src/rendering/vertex.cpp
+        src/rendering/vertex.h
+        src/rendering/camera.cpp
+        src/rendering/camera.h
+)
 
 target_link_libraries(vulkan_voxel ${Vulkan_LIBRARIES})
 target_link_libraries(vulkan_voxel glfw)
