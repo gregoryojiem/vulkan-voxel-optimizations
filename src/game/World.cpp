@@ -7,7 +7,20 @@ void World::init() {
         Block::rgbToVec3(0, 150, 0)
     };
 
+    Block pinkBlock = {
+        glm::vec3(2.0f, 0.0f, 0.0f),
+        Block::rgbToVec3(255, 174, 201)
+    };
+
+    Block purpleBlock = {
+        glm::vec3(0.0f, 2.0f, 0.0f),
+        Block::rgbToVec3(255, 0, 255)
+    };
+
     addBlock(greenBlock);
+    addBlock(pinkBlock);
+    addBlock(purpleBlock);
+
 }
 
 void World::addBlock(const Block block) {
