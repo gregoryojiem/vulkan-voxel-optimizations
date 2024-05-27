@@ -8,8 +8,8 @@
 #include <cstring>
 #include <optional>
 
-#include "Camera.h"
-#include "TimeManager.h"
+#include "../utility/TimeManager.h"
+#include "camera/Camera.h"
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;

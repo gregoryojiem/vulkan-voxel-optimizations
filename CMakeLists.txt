@@ -18,14 +18,14 @@ add_executable(vulkan_voxel
         src/main.cpp
         src/rendering/vertex.cpp
         src/rendering/vertex.h
-        src/rendering/camera.cpp
-        src/rendering/camera.h
+        src/rendering/camera/Camera.cpp
+        src/rendering/camera/Camera.h
         src/rendering/GameRenderer.cpp
         src/rendering/GameRenderer.h
-        src/rendering/TimeManager.cpp
-        src/rendering/TimeManager.h
-        src/input/InputHandler.cpp
-        src/input/InputHandler.h
+        src/utility/TimeManager.cpp
+        src/utility/TimeManager.h
+        src/utility/InputHandler.cpp
+        src/utility/InputHandler.h
 )
 
 target_link_libraries(vulkan_voxel ${Vulkan_LIBRARIES})

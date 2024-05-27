@@ -58,8 +58,8 @@ void Camera::update(std::vector<void*> uniformBuffersMapped, uint32_t currentIma
     if (state.sState) movement += front;
     if (state.aState) movement += right;
     if (state.dState) movement -= right;
-    if (state.upState()) movement += up;
-    if (state.downState()) movement -= up;
+    if (state.spaceState) movement += up;
+    if (state.shiftState) movement -= up;
 
     if (glm::length(movement) > 0.0f) {
         movement = glm::normalize(movement);

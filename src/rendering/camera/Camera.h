@@ -4,8 +4,8 @@
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "TimeManager.h"
-#include "../input/InputHandler.h"
+#include "../../utility/TimeManager.h"
+#include "../../utility/InputHandler.h"
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 model;

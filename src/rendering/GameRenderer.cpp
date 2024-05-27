@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <fstream>
 
-#include "Camera.h"
 #include "Vertex.h"
 
 #ifdef NDEBUG

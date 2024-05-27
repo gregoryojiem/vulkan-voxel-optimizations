@@ -2,7 +2,7 @@
 #define INPUTHANDLER_H
 
 #include <windows.h>
-#include <GLFW/glfw3.h>
+#include <../../../dependencies/glfw-3.4.bin.WIN64/include/GLFW/glfw3.h>
 
 struct InputState {
     int wState = 0;
