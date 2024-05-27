@@ -12,6 +12,12 @@
 #include "Camera.h"
 #include "Vertex.h"
 
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+const bool enableValidationLayers = true;
+#endif
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const bool DISPLAY_EXTENSIONS = false;
@@ -25,12 +31,6 @@ const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-#ifdef NDEBUG
-    const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
 bool QueueFamilyIndices::isComplete() { // Definition
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
@@ -38,6 +38,8 @@ bool QueueFamilyIndices::isComplete() { // Definition
 void GameRenderer::run() {
     initWindow();
     initVulkan();
+    InputHandler::init(window);
+    camera.init(getWidth(), getHeight());
     mainLoop();
     cleanup();
 }
@@ -104,7 +106,7 @@ void GameRenderer::drawFrame() {
     vkResetCommandBuffer(commandBuffers[currentFrame],  0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
-    updateUniformBuffer(uniformBuffersMapped, currentFrame, swapChainExtent.width, swapChainExtent.height);
+    camera.update(uniformBuffersMapped, currentFrame, getWidth(), getHeight(), timeManager.getDeltaTime());
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1252,6 +1254,13 @@ void GameRenderer::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
     }
+}
+
+uint32_t GameRenderer::getWidth() {
+    return swapChainExtent.width;
+}
+uint32_t GameRenderer::getHeight() {
+    return swapChainExtent.height;
 }
 
 void GameRenderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {

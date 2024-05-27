@@ -8,6 +8,9 @@
 #include <cstring>
 #include <optional>
 
+#include "Camera.h"
+#include "TimeManager.h"
+
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -24,6 +27,9 @@ struct SwapChainSupportDetails {
 class GameRenderer {
 public:
     void run();
+
+    uint32_t getWidth();
+    uint32_t getHeight();
 
 private:
     GLFWwindow *window;
@@ -75,6 +81,9 @@ private:
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
+
+    Camera camera;
+    TimeManager timeManager;
 
     void initWindow();
     void initVulkan();
