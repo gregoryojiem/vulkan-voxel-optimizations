@@ -8,7 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 void Camera::init(uint32_t width, uint32_t height) {
-    position = glm::vec3(0.0f, 2.0f, 5.0f);
+    position = glm::vec3(0.0f, 0.0f, 5.0f);
     up = glm::vec3(0.0f, 1.0f, 0.0f);
     yaw = 0.0f;
     pitch = 0.0f;
@@ -19,7 +19,7 @@ void Camera::init(uint32_t width, uint32_t height) {
 
     ubo.model = glm::mat4(1.0f);
     ubo.view = glm::lookAt(position, glm::vec3(0.0f, 2.0f, 0.0f), up);
-    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 10.0f);
+    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 100.0f);
     ubo.proj[1][1] *= -1;
 }
 
@@ -38,7 +38,7 @@ void Camera::update(std::vector<void*> uniformBuffersMapped, uint32_t currentIma
         pitch = -89.0f;
     }
 
-    yaw = fmodf(yaw, 180);
+    yaw = fmodf(yaw, 360);
 
     InputHandler::resetCursor();
 
