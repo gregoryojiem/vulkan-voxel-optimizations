@@ -22,6 +22,10 @@ add_executable(vulkan_voxel
         src/rendering/camera.h
         src/rendering/GameRenderer.cpp
         src/rendering/GameRenderer.h
+        src/rendering/TimeManager.cpp
+        src/rendering/TimeManager.h
+        src/input/InputHandler.cpp
+        src/input/InputHandler.h
 )
 
 target_link_libraries(vulkan_voxel ${Vulkan_LIBRARIES})
