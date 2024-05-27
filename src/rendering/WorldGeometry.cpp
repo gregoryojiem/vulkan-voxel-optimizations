@@ -2,14 +2,15 @@
 
 std::vector<Vertex> vertices = { };
 
-std::vector<uint16_t> indices = { };
+std::vector<uint32_t> indices = { };
 
-void addVerticesAndIndices(const std::vector<Vertex>& newVertices, const std::vector<uint16_t>& newIndices) {
+void addVerticesAndIndices(const std::vector<Vertex>& newVertices, const std::vector<uint32_t>& newIndices) {
     vertices.insert(vertices.end(), newVertices.begin(), newVertices.end());
     indices.insert(indices.end(), newIndices.begin(), newIndices.end());
 }
 
 void tesselateAndAddBlock(Block block) {
+    uint16_t newIndex = static_cast<uint16_t>(vertices.size());
     std::vector<Vertex> const vertices = {
         {{0.5f + block.position.x, 0.5f + block.position.y, 0.5f + block.position.z}, block.color},
         {{-0.5f + block.position.x, 0.5f + block.position.y, 0.5f + block.position.z}, block.color},
@@ -22,30 +23,32 @@ void tesselateAndAddBlock(Block block) {
         {{-0.5f + block.position.x, -0.5f + block.position.y, -0.5f + block.position.z}, block.color},
     };
 
-    std::vector<uint16_t> const indices = {
+
+
+    std::vector const indices = {
         //top face (facing (0, -1, 0))
-        0, 2, 1,
-        3, 1, 2,
+        newIndex + 0u, newIndex + 2u, newIndex + 1u,
+        newIndex + 3u, newIndex + 1u, newIndex + 2u,
 
         //bottom face
-        7, 6, 5,
-        4, 5, 6,
+        newIndex + 7u, newIndex + 6u, newIndex + 5u,
+        newIndex + 4u, newIndex + 5u, newIndex + 6u,
 
         //front face (facing (0, 0, -1))
-        1, 5, 0,
-        4, 0, 5,
+        newIndex + 1u, newIndex + 5u, newIndex + 0u,
+        newIndex + 4u, newIndex + 0u, newIndex + 5u,
 
         //back face
-        3, 2, 7,
-        6, 7, 2,
+        newIndex + 3u, newIndex + 2u, newIndex + 7u,
+        newIndex + 6u, newIndex + 7u, newIndex + 2u,
 
         //left face (facing (-1, 0, 0))
-        7, 5, 3,
-        1, 3, 5,
+        newIndex + 7u, newIndex + 5u, newIndex + 3u,
+        newIndex + 1u, newIndex + 3u, newIndex + 5u,
 
         //right face
-        0, 4, 2,
-        6, 2, 4
+        newIndex + 0u, newIndex + 4u, newIndex + 2u,
+        newIndex + 6u, newIndex + 2u, newIndex + 4u
     };
 
     addVerticesAndIndices(vertices, indices);
