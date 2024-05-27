@@ -26,13 +26,20 @@ struct SwapChainSupportDetails {
 
 class GameRenderer {
 public:
-    void run();
+    GLFWwindow *window;
+
+    void init();
+    void drawFrame();
+    void cleanup();
 
     uint32_t getWidth();
     uint32_t getHeight();
+    VkDevice getDevice();
+    void createVertexBuffer();
+
+    void createIndexBuffer();
 
 private:
-    GLFWwindow *window;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
@@ -70,9 +77,11 @@ private:
 
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
+    unsigned long long vertexMemorySize = 0;
 
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+    unsigned long long indexMemorySize = 0;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -86,10 +95,8 @@ private:
     TimeManager timeManager;
 
     void initWindow();
+
     void initVulkan();
-    void mainLoop();
-    void drawFrame();
-    void cleanup();
 
     void createInstance();
 
@@ -162,9 +169,6 @@ private:
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
-    void createVertexBuffer();
-
-    void createIndexBuffer();
 
     void createUniformBuffers();
 
@@ -177,6 +181,8 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     void createSyncObjects();
+
+    void resizeBuffers();
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

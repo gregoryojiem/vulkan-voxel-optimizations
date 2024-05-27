@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <fstream>
 
-#include "Vertex.h"
+#include "WorldGeometry.h"
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -34,13 +34,11 @@ bool QueueFamilyIndices::isComplete() { // Definition
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-void GameRenderer::run() {
+void GameRenderer::init() {
     initWindow();
     initVulkan();
     InputHandler::init(window);
     camera.init(getWidth(), getHeight());
-    mainLoop();
-    cleanup();
 }
 
 void GameRenderer::initWindow() {
@@ -76,17 +74,21 @@ void GameRenderer::initVulkan() {
     createSyncObjects();
 }
 
-void GameRenderer::mainLoop() {
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-        drawFrame();
-    }
-
-    vkDeviceWaitIdle(device);
-}
-
 void GameRenderer::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+    unsigned long long const vertexSize = sizeof(vertices[0]) * vertices.size();
+    unsigned long long const indexSize = sizeof(indices[0]) * indices.size();
+
+    if (vertexSize > vertexMemorySize) {
+        vertexMemorySize = static_cast<unsigned long long>(static_cast<double>(vertexSize) * 1.2);
+        createVertexBuffer();
+    }
+
+    if (indexSize > indexMemorySize) {
+        indexMemorySize *= static_cast<unsigned long long>(static_cast<double>(indexSize) * 1.2);
+        createIndexBuffer();
+    }
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -103,6 +105,7 @@ void GameRenderer::drawFrame() {
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame],  0);
+
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
     camera.update(uniformBuffersMapped, currentFrame, getWidth(), getHeight(), timeManager.getDeltaTime());
@@ -1059,7 +1062,11 @@ void GameRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
 }
 
 void GameRenderer::createVertexBuffer() {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    if (vertexMemorySize == 0) {
+        vertexMemorySize = sizeof(vertices[0]) * vertices.size();
+    }
+
+    VkDeviceSize bufferSize = vertexMemorySize;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1079,7 +1086,11 @@ void GameRenderer::createVertexBuffer() {
 }
 
 void GameRenderer::createIndexBuffer() {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    if (indexMemorySize == 0) {
+        indexMemorySize = sizeof(indices[0]) * indices.size();
+    }
+
+    VkDeviceSize bufferSize = indexMemorySize;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1193,7 +1204,7 @@ void GameRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     renderPassInfo.renderArea.extent = swapChainExtent;
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clearValues[0].color = {{0.36f, 0.8f, 0.9f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
@@ -1255,11 +1266,20 @@ void GameRenderer::createSyncObjects() {
     }
 }
 
+void GameRenderer::resizeBuffers() {
+
+}
+
 uint32_t GameRenderer::getWidth() {
     return swapChainExtent.width;
 }
+
 uint32_t GameRenderer::getHeight() {
     return swapChainExtent.height;
+}
+
+VkDevice GameRenderer::getDevice() {
+    return device;
 }
 
 void GameRenderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
