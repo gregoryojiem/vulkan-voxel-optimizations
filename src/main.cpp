@@ -14,6 +14,7 @@ int main() {
 
         while (!glfwWindowShouldClose(renderer.window)) {
             glfwPollEvents();
+            world.mainLoop();
             renderer.drawFrame();
         }
 
