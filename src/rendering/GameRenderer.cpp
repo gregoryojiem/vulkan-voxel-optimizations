@@ -77,19 +77,6 @@ void GameRenderer::initVulkan() {
 void GameRenderer::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    unsigned long long const vertexSize = sizeof(vertices[0]) * vertices.size();
-    unsigned long long const indexSize = sizeof(indices[0]) * indices.size();
-
-    if (vertexSize > vertexMemorySize) {
-        vertexMemorySize = static_cast<unsigned long long>(static_cast<double>(vertexSize) * 1.2);
-        createVertexBuffer();
-    }
-
-    if (indexSize > indexMemorySize) {
-        indexMemorySize *= static_cast<unsigned long long>(static_cast<double>(indexSize) * 1.2);
-        createIndexBuffer();
-    }
-
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
@@ -105,6 +92,14 @@ void GameRenderer::drawFrame() {
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame],  0);
+
+    if (sizeof(vertices[0]) * vertices.size() > vertexMemorySize) {
+        createVertexBuffer();
+    }
+
+    if (sizeof(indices[0]) * indices.size() > indexMemorySize) {
+        createIndexBuffer();
+    }
 
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
@@ -765,13 +760,13 @@ void GameRenderer::createGraphicsPipeline() {
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -1062,9 +1057,7 @@ void GameRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
 }
 
 void GameRenderer::createVertexBuffer() {
-    if (vertexMemorySize == 0) {
-        vertexMemorySize = sizeof(vertices[0]) * vertices.size();
-    }
+    vertexMemorySize = sizeof(vertices[0]) * vertices.size();
 
     VkDeviceSize bufferSize = vertexMemorySize;
 
@@ -1086,9 +1079,7 @@ void GameRenderer::createVertexBuffer() {
 }
 
 void GameRenderer::createIndexBuffer() {
-    if (indexMemorySize == 0) {
-        indexMemorySize = sizeof(indices[0]) * indices.size();
-    }
+    indexMemorySize = sizeof(indices[0]) * indices.size();
 
     VkDeviceSize bufferSize = indexMemorySize;
 

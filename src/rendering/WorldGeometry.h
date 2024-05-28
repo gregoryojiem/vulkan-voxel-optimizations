@@ -19,7 +19,6 @@ struct Vertex {
 extern std::vector<Vertex> vertices;
 extern std::vector<uint32_t> indices;
 
-extern void addVerticesAndIndices(const std::vector<Vertex>& newVertices, const std::vector<uint16_t>& newIndices);
-extern void tesselateAndAddBlock(Block block);
+extern void addVerticesAndIndices(const std::vector<Vertex>& newVertices, const std::vector<uint32_t>& newIndices);
 
 #endif //VERTEX_H
