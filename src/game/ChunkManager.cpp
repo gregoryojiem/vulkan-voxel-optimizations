@@ -5,6 +5,8 @@
 #include "../utility/GraphicsUtil.h"
 #include "../rendering/WorldGeometry.h"
 
+std::unordered_map<glm::vec3, Chunk*> ChunkManager::chunks;
+
 OctreeNode::OctreeNode() {
     for (int i = 0; i < 8; ++i) {
         children[i] = nullptr;
@@ -43,7 +45,7 @@ double Chunk::alignNum(double number) {
     return round((number - chunkShift) / 8) * 8 + chunkShift;
 }
 
-ChunkManager::ChunkManager() : chunks() { }
+ChunkManager::ChunkManager() = default;
 
 ChunkManager::~ChunkManager() {
     for (auto& pair : chunks) {
@@ -139,6 +141,13 @@ void ChunkManager::removeBlock(const glm::vec3& worldPos) { //todo remove geomet
     }
 
     blockTree->block = nullptr;
+
+    glm::vec3 chunkCenter = Chunk::alignToChunkPos(worldPos);
+    Chunk* chunk = getChunk(chunkCenter);
+
+    if (chunk != nullptr) {
+        chunk->geometryModified = true;
+    }
 }
 
 void ChunkManager::fillChunk(const glm::vec3 &worldPos, Block block) {
@@ -192,15 +201,15 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
 void ChunkManager::saveChunkGeometry() {
     uint32_t indexOffset = 0;
 
-    vertices = { };
-    indices = { };
+    globalChunkVertices = { };
+    globalChunkIndices = { };
     for (auto& chunkPair : chunks) {
         Chunk* chunk = chunkPair.second;
 
-        vertices.insert(vertices.end(), chunk->vertices.begin(), chunk->vertices.end());
+        globalChunkVertices.insert(globalChunkVertices.end(), chunk->vertices.begin(), chunk->vertices.end());
 
         for (auto& index : chunk->indices) {
-            indices.push_back(index + indexOffset);
+            globalChunkIndices.push_back(index + indexOffset);
         }
 
         indexOffset += (uint32_t)chunk->vertices.size();

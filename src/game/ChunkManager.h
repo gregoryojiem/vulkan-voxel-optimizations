@@ -47,6 +47,8 @@ namespace std {
 
 class ChunkManager {
 public:
+    static std::unordered_map<glm::vec3, Chunk*> chunks;
+
     ChunkManager();
     ~ChunkManager();
 
@@ -59,8 +61,6 @@ public:
     void saveChunkGeometry();
 
 private:
-    std::unordered_map<glm::vec3, Chunk*> chunks;
-
     OctreeNode* findOctreeNode(const glm::vec3& worldPos);
 };
 
