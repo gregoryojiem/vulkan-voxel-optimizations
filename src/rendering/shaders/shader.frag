@@ -10,8 +10,8 @@ const float epsilon = 0.01f;
 void main() {
     // set edges to black (wireframe)
     if (abs(bary.x) < epsilon || abs(bary.y) < epsilon || abs(bary.z) < epsilon) {
-        outColor = vec4(0.8, 0.8, 0.8, 1.0);
+        outColor = vec4(fragColor, 1.0);
     } else {
-        outColor = vec4(fragColor, 0.5);
+        outColor = vec4(fragColor, 0);
     }
 }
