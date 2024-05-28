@@ -35,6 +35,10 @@ add_executable(vulkan_voxel
         src/game/World.cpp
         src/game/Block.cpp
         src/game/Block.h
+        src/game/ChunkManager.cpp
+        src/game/ChunkManager.h
+        src/utility/GraphicsUtil.cpp
+        src/utility/GraphicsUtil.h
 )
 
 target_link_libraries(vulkan_voxel ${Vulkan_LIBRARIES})
