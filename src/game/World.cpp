@@ -26,7 +26,19 @@ void World::init() {
     addBlock(greenBlock);
     addBlock(purpleBlock);
 
-    chunkManager.fillChunk(glm::vec3(10, 0, 0), greenBlock);
+    for (int x = -100; x <= 100; ++x) {
+        for (int z = -100; z <= 100; ++z) {
+            // Calculate a random height with a bit of smoothing
+            float height = 0.5f + (rand() % 100) / 100.0f;
+            height += 0.2f * (x / 10.0f) + 0.2f * (z / 10.0f); // Add a slight slope
+
+            // Determine block type based on height (higher height = higher ground)
+            Block block = (height > 0.7f) ? greenBlock : pinkBlock;
+            block.position = glm::vec3(x, static_cast<int>(height * 5.0f), z);
+            addBlock(block);
+        }
+    }
+
     chunkManager.saveChunkGeometry();
 }
 

@@ -1,12 +1,12 @@
 #include "WorldGeometry.h"
 
-std::vector<Vertex> vertices = { };
+std::vector<Vertex> globalChunkVertices = { };
 
-std::vector<uint32_t> indices = { };
+std::vector<uint32_t> globalChunkIndices = { };
 
 void addVerticesAndIndices(const std::vector<Vertex>& newVertices, const std::vector<uint32_t>& newIndices) {
-    vertices.insert(vertices.end(), newVertices.begin(), newVertices.end());
-    indices.insert(indices.end(), newIndices.begin(), newIndices.end());
+    globalChunkVertices.insert(globalChunkVertices.end(), newVertices.begin(), newVertices.end());
+    globalChunkIndices.insert(globalChunkIndices.end(), newIndices.begin(), newIndices.end());
 }
 
 VkVertexInputBindingDescription Vertex::getBindingDescription() {
