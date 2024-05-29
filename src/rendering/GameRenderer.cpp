@@ -10,6 +10,7 @@
 #include <fstream>
 
 #include "WorldGeometry.h"
+#include "../game/ChunkManager.h"
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -17,8 +18,8 @@
 const bool enableValidationLayers = true;
 #endif
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+uint32_t WIDTH = 1280;
+uint32_t HEIGHT = 720;
 const bool DISPLAY_EXTENSIONS = false;
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -38,7 +39,6 @@ void GameRenderer::init() {
     initWindow();
     initVulkan();
     InputHandler::init(window);
-    camera.init(getWidth(), getHeight());
 }
 
 void GameRenderer::initWindow() {
@@ -74,7 +74,7 @@ void GameRenderer::initVulkan() {
     createSyncObjects();
 }
 
-void GameRenderer::drawFrame() {
+void GameRenderer::drawFrame(UniformBufferObject ubo) {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
@@ -93,17 +93,17 @@ void GameRenderer::drawFrame() {
 
     vkResetCommandBuffer(commandBuffers[currentFrame],  0);
 
-    if (sizeof(vertices[0]) * vertices.size() > vertexMemorySize) {
+    if (sizeof(globalChunkVertices[0]) * globalChunkVertices.size() > vertexMemorySize) {
         createVertexBuffer();
     }
 
-    if (sizeof(indices[0]) * indices.size() > indexMemorySize) {
+    if (sizeof(globalChunkIndices[0]) * globalChunkIndices.size() > indexMemorySize) {
         createIndexBuffer();
     }
 
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
-    camera.update(uniformBuffersMapped, currentFrame, getWidth(), getHeight(), timeManager.getDeltaTime());
+    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -661,8 +661,8 @@ void GameRenderer::createDescriptorSetLayout() {
 }
 
 void GameRenderer::createGraphicsPipeline() {
-    auto vertShaderCode = readFile("../src/rendering/shaders/vert.spv");
-    auto fragShaderCode = readFile("../src/rendering/shaders/frag.spv");
+    auto vertShaderCode = readFile("src/rendering/shaders/vert.spv");
+    auto fragShaderCode = readFile("src/rendering/shaders/frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1057,7 +1057,7 @@ void GameRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
 }
 
 void GameRenderer::createVertexBuffer() {
-    vertexMemorySize = sizeof(vertices[0]) * vertices.size();
+    vertexMemorySize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
 
     VkDeviceSize bufferSize = vertexMemorySize;
 
@@ -1067,7 +1067,7 @@ void GameRenderer::createVertexBuffer() {
 
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t) bufferSize);
+    memcpy(data, globalChunkVertices.data(), (size_t) bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
@@ -1079,7 +1079,7 @@ void GameRenderer::createVertexBuffer() {
 }
 
 void GameRenderer::createIndexBuffer() {
-    indexMemorySize = sizeof(indices[0]) * indices.size();
+    indexMemorySize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
 
     VkDeviceSize bufferSize = indexMemorySize;
 
@@ -1089,7 +1089,7 @@ void GameRenderer::createIndexBuffer() {
 
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t) bufferSize);
+    memcpy(data, globalChunkIndices.data(), (size_t) bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
@@ -1195,7 +1195,7 @@ void GameRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     renderPassInfo.renderArea.extent = swapChainExtent;
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {{0.36f, 0.8f, 0.9f, 1.0f}};
+    clearValues[0].color = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
@@ -1220,13 +1220,14 @@ void GameRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
 
     VkBuffer vertexBuffers[] = {vertexBuffer};
     VkDeviceSize offsets[] = {0};
+
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(globalChunkIndices.size()), 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 

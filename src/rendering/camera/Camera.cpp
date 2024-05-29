@@ -13,23 +13,23 @@ void Camera::init(uint32_t width, uint32_t height) {
     yaw = 0.0f;
     pitch = 0.0f;
     fovy = 45.0f;
-    movementSpeed = 5.0f;
-    horzMouseSens = 0.05f;
-    vertMouseSens = 0.04f;
+    movementSpeed = 9.0f;
+    horzMouseSens = 150.0f;
+    vertMouseSens = 150.0f;
 
     ubo.model = glm::mat4(1.0f);
     ubo.view = glm::lookAt(position, glm::vec3(0.0f, 2.0f, 0.0f), up);
-    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 100.0f);
+    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 300.0f);
     ubo.proj[1][1] *= -1;
 }
 
 
-void Camera::update(std::vector<void*> uniformBuffersMapped, uint32_t currentImage, uint32_t width, uint32_t height, float deltaTime) {
+void Camera::update(float deltaTime) {
     InputState state = InputHandler::getState();
 
     // handle input and calculate new yaw and pitch to get the new front vector
-    yaw += -state.xDelta * horzMouseSens;
-    pitch += state.yDelta * vertMouseSens;
+    yaw += -state.xDelta * horzMouseSens * deltaTime;
+    pitch += state.yDelta * vertMouseSens * deltaTime;
 
     if (pitch > 89.0f) {
         pitch = 89.0f;
@@ -67,6 +67,8 @@ void Camera::update(std::vector<void*> uniformBuffersMapped, uint32_t currentIma
 
     position += movement * movementSpeed * deltaTime;
     ubo.view = glm::lookAt(position, position - front, up);
+}
 
-    memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+void Camera::updateProj(uint32_t width, uint32_t height) {
+    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 300.0f);
 }

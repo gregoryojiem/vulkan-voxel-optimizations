@@ -15,12 +15,14 @@ struct UniformBufferObject {
 
 class Camera {
 public:
+    UniformBufferObject ubo;
+
     void init(uint32_t width, uint32_t height);
-    void update(std::vector<void*> uniformBuffersMapped, uint32_t currentImage, uint32_t width, uint32_t height, float deltaTime);
+    void update(float deltaTime);
+    void updateProj(uint32_t width, uint32_t height);
 
 private:
     TimeManager timeManager;
-    UniformBufferObject ubo;
     glm::vec3 position;
     glm::vec3 front;
     glm::vec3 up;

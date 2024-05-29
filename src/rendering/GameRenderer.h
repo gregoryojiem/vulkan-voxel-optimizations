@@ -11,6 +11,9 @@
 #include "../utility/TimeManager.h"
 #include "camera/Camera.h"
 
+extern uint32_t WIDTH;
+extern uint32_t HEIGHT;
+
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -29,7 +32,7 @@ public:
     GLFWwindow *window;
 
     void init();
-    void drawFrame();
+    void drawFrame(UniformBufferObject ubo);
     void cleanup();
 
     uint32_t getWidth();
@@ -90,9 +93,6 @@ private:
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
-
-    Camera camera;
-    TimeManager timeManager;
 
     void initWindow();
 
