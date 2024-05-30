@@ -86,6 +86,10 @@ private:
     VkDeviceMemory indexBufferMemory;
     unsigned long long indexMemorySize = 0;
 
+    VkBuffer drawParamsBuffer;
+    VkDeviceMemory drawParamsBufferMemory;
+    unsigned long long drawParamsMemorySize = 0;
+
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
@@ -169,6 +173,7 @@ private:
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
+    bool createDrawParamsAndBindVBuffer();
 
     void createUniformBuffers();
 
@@ -181,8 +186,6 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     void createSyncObjects();
-
-    void resizeBuffers();
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

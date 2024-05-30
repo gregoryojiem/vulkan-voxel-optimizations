@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <fstream>
 
-#include "WorldGeometry.h"
+#include "VertexPool.h"
 #include "../game/ChunkManager.h"
 
 #ifdef NDEBUG
@@ -165,6 +165,9 @@ void GameRenderer::cleanup() {
 
     vkDestroyBuffer(device, vertexBuffer, nullptr);
     vkFreeMemory(device, vertexBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, drawParamsBuffer, nullptr);
+    vkFreeMemory(device, drawParamsBufferMemory, nullptr);
 
     vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -336,7 +339,11 @@ bool GameRenderer::isDeviceSuitable(VkPhysicalDevice device) {
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate;
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+    bool multiDrawIndirectSupported = deviceFeatures.multiDrawIndirect;
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate && multiDrawIndirectSupported;
 }
 
 bool GameRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -404,6 +411,7 @@ void GameRenderer::createLogicalDevice() {
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.multiDrawIndirect = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1100,6 +1108,39 @@ void GameRenderer::createIndexBuffer() {
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
+bool GameRenderer::createDrawParamsAndBindVBuffer() {
+    const VkDeviceSize bufferSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedIndexRanges().size();
+
+    if (bufferSize == 0) {
+        return false;
+    }
+
+    if (bufferSize != drawParamsMemorySize) {
+        createBuffer(bufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, drawParamsBuffer, drawParamsBufferMemory);
+        drawParamsMemorySize = bufferSize;
+    }
+
+    void* data;
+    vkMapMemory(device, drawParamsBufferMemory, 0, bufferSize, 0, &data);
+
+    uint32_t commandIndex = 0;
+    for (auto&[chunkID, startPos, endPos, offset, objectCount] : VertexPool::getOccupiedIndexRanges()) {
+        VkDrawIndexedIndirectCommand command;
+        command.indexCount = objectCount;
+        command.instanceCount = 1;
+        command.firstIndex = startPos;
+        command.vertexOffset = static_cast<int32_t>(offset);
+        command.firstInstance = 0;
+
+        memcpy((char*)data + commandIndex * sizeof(VkDrawIndexedIndirectCommand), &command, sizeof(VkDrawIndexedIndirectCommand));
+        commandIndex++;
+    }
+
+    vkUnmapMemory(device, drawParamsBufferMemory);
+    return true;
+}
+
+
 void GameRenderer::createUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -1227,7 +1268,10 @@ void GameRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(globalChunkIndices.size()), 1, 0, 0, 0);
+    if (createDrawParamsAndBindVBuffer()) {
+        uint32_t drawCount = VertexPool::getOccupiedIndexRanges().size();
+        vkCmdDrawIndexedIndirect(commandBuffer, drawParamsBuffer, 0, drawCount, sizeof(VkDrawIndexedIndirectCommand));
+    }
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1256,10 +1300,6 @@ void GameRenderer::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
     }
-}
-
-void GameRenderer::resizeBuffers() {
-
 }
 
 uint32_t GameRenderer::getWidth() {
