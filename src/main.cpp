@@ -2,7 +2,7 @@
 
 #include "game/World.h"
 #include "rendering/GameRenderer.h"
-#include "rendering/WorldGeometry.h"
+#include "rendering/Vertex.h"
 
 int main() {
     GameRenderer renderer;
