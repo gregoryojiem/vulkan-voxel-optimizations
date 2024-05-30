@@ -4,6 +4,9 @@
 #include <cmath>
 
 #include "../rendering/Vertex.h"
+#include "FastNoiseLite.h"
+
+World::World() : seed(2) { }
 
 void World::init() {
     Block greenBlock = {
@@ -22,10 +25,28 @@ void World::init() {
         Block::rgbToVec3(255, 255, 0)
     };
 
-    addBlock(pinkBlock);
-    addBlock(greenBlock);
-    addBlock(purpleBlock);
+    FastNoiseLite noise;
+    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
+    int range = 512;
+    for (int x = -range; x < range; x++)
+    {
+        for (int z = -range; z < range; z++)
+        {
+            float noiseInfo = noise.GetNoise((float)x, (float)z);
+            greenBlock.position = {x, (int)(noiseInfo*15), z};
+            int test = 50+(int)(noiseInfo*200);
+            if (test < 0) {
+                test = 0;
+            }
+            greenBlock.color = Block::rgbToVec3(test, (int)(noiseInfo*100) + 150, test);
+            addBlock(greenBlock);
+        }
+    }
+
+    chunkManager.meshAllChunks();
+
+    return;
     for (int x = -100; x <= 100; ++x) {
         for (int z = -100; z <= 100; ++z) {
             // Calculate a random height with a bit of smoothing
@@ -39,7 +60,6 @@ void World::init() {
         }
     }
 
-    chunkManager.meshAllChunks();
 }
 
 static int counter = 0;

@@ -13,13 +13,13 @@ void Camera::init(uint32_t width, uint32_t height) {
     yaw = 0.0f;
     pitch = 0.0f;
     fovy = 45.0f;
-    movementSpeed = 9.0f;
-    horzMouseSens = 150.0f;
-    vertMouseSens = 150.0f;
+    movementSpeed = 90.0f;
+    horzMouseSens = 200.0f;
+    vertMouseSens = 200.0f;
 
     ubo.model = glm::mat4(1.0f);
     ubo.view = glm::lookAt(position, glm::vec3(0.0f, 2.0f, 0.0f), up);
-    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 300.0f);
+    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 10000.0f);
     ubo.proj[1][1] *= -1;
 }
 

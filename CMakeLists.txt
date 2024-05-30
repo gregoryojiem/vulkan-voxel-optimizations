@@ -4,6 +4,7 @@ project(vulkan_voxel)
 set(CMAKE_CXX_STANDARD 23)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm-1.0.1")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/dependencies/misc")
 
 find_package(Vulkan REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
@@ -41,6 +42,8 @@ add_executable(vulkan_voxel
         src/utility/GraphicsUtil.h
         src/rendering/VertexPool.cpp
         src/rendering/VertexPool.h
+        src/rendering/TextRenderer.cpp
+        src/rendering/TextRenderer.h
 )
 
 target_link_libraries(vulkan_voxel ${Vulkan_LIBRARIES})

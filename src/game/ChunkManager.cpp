@@ -155,10 +155,15 @@ Block* ChunkManager::getBlock(const glm::vec3& worldPos) {
     OctreeNode* blockTree = findOctreeNode(worldPos);
 
     if (blockTree == nullptr) {
-        throw std::runtime_error("error adding new block!");
+        throw std::runtime_error("error getting block!");
     }
 
     return blockTree->block;
+}
+
+bool ChunkManager::hasBlock(const glm::vec3& worldPos) {
+    OctreeNode* blockTree = findOctreeNode(worldPos);
+    return blockTree != nullptr;
 }
 
 void ChunkManager::removeBlock(const glm::vec3& worldPos) { //todo remove geometry

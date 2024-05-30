@@ -63,6 +63,7 @@ public:
     void meshChunk(Chunk& chunk);
     void addBlock(const Block& block);
     Block* getBlock(const glm::vec3& worldPos);
+    bool hasBlock(const glm::vec3& worldPos);
     void removeBlock(const glm::vec3& worldPos);
     void fillChunk(const glm::vec3& worldPos, Block block);
     void meshAllChunks();
