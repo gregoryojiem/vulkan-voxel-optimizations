@@ -1,11 +1,15 @@
 #include "ChunkManager.h"
 
+#include <iostream>
 #include <stdexcept>
 #include <glm/common.hpp>
+
+#include "../rendering/VertexPool.h"
 #include "../utility/GraphicsUtil.h"
-#include "../rendering/WorldGeometry.h"
+#include "../rendering/Vertex.h"
 
 std::unordered_map<glm::vec3, Chunk*> ChunkManager::chunks;
+uint32_t ChunkManager::currentID = 1;
 
 OctreeNode::OctreeNode() {
     for (int i = 0; i < 8; ++i) {
@@ -31,6 +35,7 @@ OctreeNode::~OctreeNode() {
 Chunk::Chunk(const glm::vec3& pos) {
     octree = new OctreeNode(pos);
     geometryModified = false;
+    ID = ChunkManager::currentID++;
 }
 
 Chunk::~Chunk() {
@@ -78,6 +83,35 @@ void ChunkManager::createChunk(const glm::vec3& worldPos) {
     chunks[worldPos] = newChunk;
 }
 
+void ChunkManager::meshChunk(Chunk& chunk) {
+    chunk.vertices = { };
+    chunk.indices = { };
+
+    for (int i = 0; i < 8; i++) {
+        OctreeNode* topNode = chunk.octree->children[i];
+        if (topNode == nullptr) {
+            continue;
+        }
+        for (int j = 0; j < 8; j++) {
+            OctreeNode* middleNode = topNode->children[j];
+            if (middleNode == nullptr) {
+                continue;
+            }
+            for (int k = 0; k < 8; k++) {
+                OctreeNode* blockNode = middleNode->children[k];
+                if (blockNode != nullptr) {
+                    std::vector<Vertex> blockVertices = generateBlockVertices(*blockNode->block);
+                    std::vector<uint32_t> blockIndices = generateBlockIndices(chunk.vertices.size());
+                    chunk.vertices.insert(chunk.vertices.end(), blockVertices.begin(), blockVertices.end());
+                    chunk.indices.insert(chunk.indices.end(), blockIndices.begin(), blockIndices.end());
+                }
+            }
+        }
+    }
+
+    chunk.geometryModified = false;
+}
+
 void ChunkManager::addBlock(const Block& block) {
     glm::vec3 chunkCenter = Chunk::alignToChunkPos(block.position);
     Chunk* chunk = getChunk(chunkCenter);
@@ -115,12 +149,6 @@ void ChunkManager::addBlock(const Block& block) {
 
     currentNode->block = new Block(block);
     chunk->geometryModified = true;
-
-    std::vector<Vertex> blockVertices = generateBlockVertices(block);
-    std::vector<uint32_t> blockIndices = generateBlockIndices(chunk->vertices.size());
-
-    chunk->vertices.insert(chunk->vertices.end(), blockVertices.begin(), blockVertices.end());
-    chunk->indices.insert(chunk->indices.end(), blockIndices.begin(), blockIndices.end());
 }
 
 Block* ChunkManager::getBlock(const glm::vec3& worldPos) {
@@ -198,20 +226,14 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
     return currentNode;
 }
 
-void ChunkManager::saveChunkGeometry() {
-    uint32_t indexOffset = 0;
-
-    globalChunkVertices = { };
-    globalChunkIndices = { };
+void ChunkManager::meshAllChunks() {
     for (auto& chunkPair : chunks) {
         Chunk* chunk = chunkPair.second;
 
-        globalChunkVertices.insert(globalChunkVertices.end(), chunk->vertices.begin(), chunk->vertices.end());
-
-        for (auto& index : chunk->indices) {
-            globalChunkIndices.push_back(index + indexOffset);
+        if (chunk->geometryModified) {
+            meshChunk(*chunk);
+            //todo remove chunk->geometryModified = false;
+            VertexPool::addToVertexPool(*chunk);
         }
-
-        indexOffset += (uint32_t)chunk->vertices.size();
     }
 }

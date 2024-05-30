@@ -7,8 +7,12 @@
 #include <glm/glm.hpp>
 
 #include "Block.h"
+#include "../rendering/Vertex.h"
 
-struct Vertex;
+static glm::vec3 chunkSize = glm::vec3(8.0f);
+static std::vector<float> subIncrements = { 2.0f, 1.0, 0.5 };
+static float chunkShift = 3.5;
+static int maxDepth = 3;
 
 struct OctreeNode {
     OctreeNode* children[8] = {nullptr};
@@ -25,6 +29,7 @@ struct Chunk {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     bool geometryModified;
+    uint32_t ID;
 
     explicit Chunk(const glm::vec3& pos);
     ~Chunk();
@@ -48,24 +53,22 @@ namespace std {
 class ChunkManager {
 public:
     static std::unordered_map<glm::vec3, Chunk*> chunks;
+    static uint32_t currentID;
 
     ChunkManager();
     ~ChunkManager();
 
     Chunk* getChunk(const glm::vec3& worldPos);
     void createChunk(const glm::vec3& worldPos);
+    void meshChunk(Chunk& chunk);
     void addBlock(const Block& block);
     Block* getBlock(const glm::vec3& worldPos);
     void removeBlock(const glm::vec3& worldPos);
     void fillChunk(const glm::vec3& worldPos, Block block);
-    void saveChunkGeometry();
+    void meshAllChunks();
 
 private:
     OctreeNode* findOctreeNode(const glm::vec3& worldPos);
 };
 
-static glm::vec3 chunkSize = glm::vec3(8.0f);
-static std::vector<float> subIncrements = { 2.0f, 1.0, 0.5 };
-static float chunkShift = 3.5;
-static int maxDepth = 3;
 #endif //CHUNK_H

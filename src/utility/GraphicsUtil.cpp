@@ -1,6 +1,6 @@
 #include "GraphicsUtil.h"
 
-#include "../rendering/WorldGeometry.h"
+#include "../rendering/Vertex.h"
 
 std::vector<Vertex> generateBlockVertices(Block block) {
     const std::vector<Vertex> geometry = {

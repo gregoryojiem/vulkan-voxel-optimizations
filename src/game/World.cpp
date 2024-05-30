@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cmath>
 
-#include "../rendering/WorldGeometry.h"
+#include "../rendering/Vertex.h"
 
 void World::init() {
     Block greenBlock = {
@@ -19,7 +19,7 @@ void World::init() {
 
     Block purpleBlock = {
         glm::vec3(0.0f, 2.0f, 0.0f),
-        Block::rgbToVec3(255, 0, 0)
+        Block::rgbToVec3(255, 255, 0)
     };
 
     addBlock(pinkBlock);
@@ -39,13 +39,13 @@ void World::init() {
         }
     }
 
-    chunkManager.saveChunkGeometry();
+    chunkManager.meshAllChunks();
 }
 
 static int counter = 0;
 
 void World::mainLoop() {
-    counter++;
+    //counter++;
     if (counter % 100 == -1) {
         double angle = static_cast<double>(counter) / 100.0f * 3.14159f * 2.0f; // Full circle in 200 iterations
         double radius = 1.0f + static_cast<double>(counter) / 200.0f; // Increasing radius
@@ -66,7 +66,7 @@ void World::mainLoop() {
         };
         addBlock(testBlock);
     }
-    chunkManager.saveChunkGeometry();
+    //chunkManager.meshAllChunks();
 }
 
 void World::addBlock(const Block block) {

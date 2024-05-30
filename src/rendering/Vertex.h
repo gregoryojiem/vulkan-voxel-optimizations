@@ -16,9 +16,4 @@ struct Vertex {
     static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions();
 };
 
-extern std::vector<Vertex> globalChunkVertices;
-extern std::vector<uint32_t> globalChunkIndices;
-
-extern void addVerticesAndIndices(const std::vector<Vertex>& newVertices, const std::vector<uint32_t>& newIndices);
-
 #endif //VERTEX_H

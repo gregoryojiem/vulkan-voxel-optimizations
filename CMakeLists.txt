@@ -21,8 +21,8 @@ set_target_properties(glfw PROPERTIES
 
 add_executable(vulkan_voxel
         src/main.cpp
-        src/rendering/WorldGeometry.cpp
-        src/rendering/WorldGeometry.h
+        src/rendering/Vertex.cpp
+        src/rendering/Vertex.h
         src/rendering/camera/Camera.cpp
         src/rendering/camera/Camera.h
         src/rendering/GameRenderer.cpp
@@ -39,6 +39,8 @@ add_executable(vulkan_voxel
         src/game/ChunkManager.h
         src/utility/GraphicsUtil.cpp
         src/utility/GraphicsUtil.h
+        src/rendering/VertexPool.cpp
+        src/rendering/VertexPool.h
 )
 
 target_link_libraries(vulkan_voxel ${Vulkan_LIBRARIES})
