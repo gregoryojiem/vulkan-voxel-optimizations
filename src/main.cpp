@@ -19,7 +19,7 @@ int main() {
             glfwPollEvents();
             world.mainLoop();
             camera.update(timeManager.getDeltaTime());
-            renderer.drawFrame(camera.ubo);
+            renderer.drawFrame();
         }
 
         vkDeviceWaitIdle(renderer.getDevice());
