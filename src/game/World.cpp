@@ -21,14 +21,16 @@ void World::init() {
 
 
     Block purpleBlock = {
-        glm::vec3(0.0f, 2.0f, 0.0f),
+        glm::vec3(1.0f, 2.0f, 0.0f),
         Block::rgbToVec3(255, 255, 0)
     };
 
     FastNoiseLite noise;
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
-    int range = 512;
+    addBlock(purpleBlock);
+
+    int range = 0;
     for (int x = -range; x < range; x++)
     {
         for (int z = -range; z < range; z++)
