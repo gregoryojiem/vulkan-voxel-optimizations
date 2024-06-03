@@ -5,9 +5,9 @@
 
 #include "../game/Block.h"
 
-struct Vertex;
+struct ChunkVertex;
 
-extern std::vector<Vertex> generateBlockVertices(Block block);
+extern std::vector<ChunkVertex> generateBlockVertices(Block block);
 
 extern std::vector<uint32_t> generateBlockIndices(uint32_t startIndex);
 

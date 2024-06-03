@@ -2,8 +2,8 @@
 
 #include "../rendering/Vertex.h"
 
-std::vector<Vertex> generateBlockVertices(Block block) {
-    const std::vector<Vertex> geometry = {
+std::vector<ChunkVertex> generateBlockVertices(Block block) {
+    const std::vector<ChunkVertex> geometry = {
         {{0.5f + block.position.x, 0.5f + block.position.y, 0.5f + block.position.z}, block.color},
         {{-0.5f + block.position.x, 0.5f + block.position.y, 0.5f + block.position.z}, block.color},
         {{0.5f + block.position.x, 0.5f + block.position.y, -0.5f + block.position.z}, block.color},
