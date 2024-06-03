@@ -1,6 +1,6 @@
 #include "VertexPool.h"
 
-std::vector<Vertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
+std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::vector<uint32_t> globalChunkIndices(CHUNK_INDICES_SIZE);
 
 std::vector<ChunkMemoryRange> VertexPool::occupiedVertexRanges;

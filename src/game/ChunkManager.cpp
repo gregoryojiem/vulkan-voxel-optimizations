@@ -100,7 +100,7 @@ void ChunkManager::meshChunk(Chunk& chunk) {
             for (int k = 0; k < 8; k++) {
                 OctreeNode* blockNode = middleNode->children[k];
                 if (blockNode != nullptr) {
-                    std::vector<Vertex> blockVertices = generateBlockVertices(*blockNode->block);
+                    std::vector<ChunkVertex> blockVertices = generateBlockVertices(*blockNode->block);
                     std::vector<uint32_t> blockIndices = generateBlockIndices(chunk.vertices.size());
                     chunk.vertices.insert(chunk.vertices.end(), blockVertices.begin(), blockVertices.end());
                     chunk.indices.insert(chunk.indices.end(), blockIndices.begin(), blockIndices.end());

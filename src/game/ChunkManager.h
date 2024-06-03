@@ -26,7 +26,7 @@ struct OctreeNode {
 
 struct Chunk {
     OctreeNode* octree;
-    std::vector<Vertex> vertices;
+    std::vector<ChunkVertex> vertices;
     std::vector<uint32_t> indices;
     bool geometryModified;
     uint32_t ID;
