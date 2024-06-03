@@ -5,10 +5,8 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <stdexcept>
-#include <cstring>
 #include <optional>
 
-#include "../utility/TimeManager.h"
 #include "camera/Camera.h"
 
 extern uint32_t WIDTH;

@@ -2,7 +2,6 @@
 
 
 #include <iostream>
-#include <cstdlib>
 #include <set>
 #include <cstdint>
 #include <limits>
@@ -11,7 +10,6 @@
 
 #include "TextRenderer.h"
 #include "VertexPool.h"
-#include "../game/ChunkManager.h"
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
