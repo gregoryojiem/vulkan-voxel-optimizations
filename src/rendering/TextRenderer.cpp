@@ -4,9 +4,11 @@
 #include <iostream>
 #include <filesystem>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "GameRenderer.h"
 
-FT_Library TextRenderer::ft;
 std::map<char, Character> TextRenderer::characters;
 const std::string TextRenderer::fontPath = "resources/fonts";
 const std::string TextRenderer::fontToUse = "slkscr";
@@ -36,16 +38,8 @@ VkPipelineLayout TextRenderer::pipelineLayout;
 VkPipeline TextRenderer::textGraphicsPipeline;
 
 void TextRenderer::init() {
-    std::vector<uint8_t> fontAtlas;
-    uint32_t atlasWidth;
-    uint32_t atlasHeight;
-
-    if (!loadAtlasFromFile(fontAtlas, atlasWidth, atlasHeight)) {
-        createFontAtlas(fontAtlas, atlasWidth, atlasHeight);
-        saveAtlasToFile(fontAtlas, atlasWidth, atlasHeight);
-    }
-
-    createFontAtlasVkImage(fontAtlas, atlasWidth, atlasHeight);
+    getFontAtlasGlyphs();
+    createFontAtlasVkImage();
 
     const uint32_t vertexBufferSize = sizeof(TexturedVertex) * vertices.size();
     const uint32_t indexBufferSize = sizeof(uint32_t) * indices.size();
@@ -65,116 +59,56 @@ void TextRenderer::init() {
         textDescriptorSetLayout);
 }
 
-void TextRenderer::createFontAtlas(std::vector<uint8_t>& fontAtlas, uint32_t& atlasWidth, uint32_t& atlasHeight) {
-    if (FT_Init_FreeType(&ft)) {
-        throw std::runtime_error("failed to initialize FreeType!");
+void TextRenderer::getFontAtlasGlyphs() {
+    std::string pathToCSV = fontPath + "/" + "generated/" + fontToUse + ".csv";
+    std::ifstream csvFile(pathToCSV);
+
+    if (!csvFile.is_open()) {
+        throw std::runtime_error("failed to open csv with font information!");
+        return;
     }
 
-    std::string ttfFontPath = fontPath + "/" + fontToUse + ".ttf";
+    std::string line;
 
-    FT_Face face;
-    if (FT_New_Face(ft, ttfFontPath.c_str(), 0, &face)) {
-        throw std::runtime_error("failed to load in the slkscr.ttf font!");
-    }
+    while (std::getline(csvFile, line)) {
+        std::ranges::replace(line, ',', ' ');
+        std::stringstream ss(line);
 
-    FT_Set_Pixel_Sizes(face, 0, fontSize);
+        int charID;
+        double advance, planeL, planeB, planeR, planeT, atlasL, atlasB, atlasR, atlasT;
+        ss >> charID >> advance >> planeL >> planeB >> planeR >> planeT >> atlasL >> atlasB >> atlasR >> atlasT;
+        char asciiChar = static_cast<char>(charID);
 
-    uint32_t totalWidth = 0;
-    uint32_t maxWidth = 0;
-    uint32_t maxHeight = 0;
-    generateFontAtlasGlyphs(face, totalWidth, maxWidth, maxHeight);
-
-    double requiredBins = static_cast<double>(totalWidth*maxHeight)/(maxWidth*maxHeight);
-    auto binsPerSide = static_cast<uint32_t>(std::round(std::sqrt(requiredBins))) + 1; //todo verify and optimize this solution
-    atlasWidth = binsPerSide * maxWidth;
-    atlasHeight = binsPerSide * maxHeight;
-
-    fontAtlas.resize(atlasWidth * atlasHeight * 4);
-    createFontAtlasImage(face, fontAtlas, atlasWidth, maxHeight);
-
-    if (FT_Load_Char(face, 43, FT_LOAD_RENDER))
-    {
-        throw std::runtime_error("failed to load in glyph!");
-    }
-
-    FT_Done_Face(face);
-    FT_Done_FreeType(ft);
-}
-
-void TextRenderer::generateFontAtlasGlyphs(FT_Face face, uint32_t& totalWidth, uint32_t& maxWidth, uint32_t& maxHeight) {
-    for (unsigned char c = 33; c < 127; c++) {
-        if (FT_Load_Char(face, c, FT_LOAD_RENDER))
-        {
-            throw std::runtime_error("failed to load in glyph!");
-        }
-
-        FT_Render_Glyph(face->glyph, FT_RENDER_MODE_SDF);
-
-        //save character information for use in drawing quads later
-        Character character = {
-            glm::vec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            face->glyph->advance.x,
-            totalWidth
+        Character characterInfo = {
+            glm::vec4(planeL, planeB, planeR, planeT),
+            glm::vec4(atlasL, atlasB, atlasR, atlasT),
+            advance,
+            asciiChar
         };
-        characters.insert(std::pair<char, Character>(c, character));
 
-        totalWidth += face->glyph->bitmap.width;
-        maxWidth = std::max(face->glyph->bitmap.width, maxHeight);
-        maxHeight = std::max(face->glyph->bitmap.rows, maxHeight);
+        characters.insert({asciiChar, characterInfo});
     }
 }
 
-void TextRenderer::createFontAtlasImage(FT_Face face, std::vector<uint8_t>& fontAtlas, uint32_t atlasWidth, uint32_t maxHeight) {
-    uint32_t rowOffsetSize = atlasWidth * 4;
-    uint32_t widthOffset = 0;
-    uint32_t rowOffset = 0;
+void TextRenderer::createFontAtlasVkImage() {
+    int atlasWidth;
+    int atlasHeight;
+    int channels;
+    std::string pathToAtlas = fontPath + "/" + "generated/" + fontToUse + ".png";
+    stbi_uc* pixels = stbi_load(pathToAtlas.c_str(), &atlasWidth, &atlasHeight, &channels, STBI_rgb_alpha);
 
-    for (unsigned char c = 33; c < 127; c++) {
-        if (FT_Load_Char(face, c, FT_LOAD_RENDER))
-        {
-            throw std::runtime_error("failed to load in glyph!");
-        }
-
-        FT_Render_Glyph(face->glyph, FT_RENDER_MODE_SDF);
-
-        uint32_t cols = face->glyph->bitmap.width;
-        uint32_t rows = face->glyph->bitmap.rows;
-        int pitch = abs(face->glyph->bitmap.pitch);
-
-        if (widthOffset/4 + cols > atlasWidth) {
-            widthOffset = 0;
-            rowOffset += maxHeight * rowOffsetSize;
-        }
-
-        for (int y = 0; y < rows; y++) {
-            for (int x = 0; x < cols; x++) {
-                uint8_t pixel = face->glyph->bitmap.buffer[y * pitch + x];
-                uint32_t atlasIndex = y * rowOffsetSize + x * 4 + widthOffset + rowOffset;
-
-                //set four values for RGBA
-                fontAtlas[atlasIndex] = pixel;
-                fontAtlas[atlasIndex + 1] = pixel;
-                fontAtlas[atlasIndex + 2] = pixel;
-                fontAtlas[atlasIndex + 3] = 255;
-            }
-        }
-
-        widthOffset += face->glyph->bitmap.width * 4;
-    }
-}
-
-void TextRenderer::createFontAtlasVkImage(const std::vector<unsigned char>& fontAtlas,
-    uint32_t atlasWidth, uint32_t atlasHeight) {
     uint32_t imageSize = atlasWidth * atlasHeight * 4;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    GameRenderer::createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    GameRenderer::createBuffer(imageSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingBuffer, stagingBufferMemory);
 
     void* data;
     vkMapMemory(GameRenderer::device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, fontAtlas.data(), imageSize);
+    memcpy(data, pixels, imageSize);
     vkUnmapMemory(GameRenderer::device, stagingBufferMemory);
 
     GameRenderer::createImage(atlasWidth, atlasHeight,
@@ -309,49 +243,3 @@ void TextRenderer::cleanup() {
     vkFreeMemory(GameRenderer::device, fontAtlasMemory, nullptr);
 }
 
-void TextRenderer::saveAtlasToFile(const std::vector<uint8_t>& fontAtlas, uint32_t atlasWidth, uint32_t atlasHeight) {
-    std::string fontAtlasPath = fontPath + "/generated/" + fontToUse + ".bin";
-
-    std::filesystem::path directory = std::filesystem::path(fontAtlasPath).parent_path();
-    if (!exists(directory)) {
-        create_directories(directory);
-    }
-
-    std::ofstream outFile(fontAtlasPath, std::ios::binary);
-
-    if (!outFile.is_open()) {
-        throw std::runtime_error("failed to open file for saving font atlas! path: " + fontAtlasPath);
-    }
-
-    //store the width and height first in the file
-    outFile.write(reinterpret_cast<const char*>(&atlasWidth), sizeof(uint32_t));
-    outFile.write(reinterpret_cast<const char*>(&atlasHeight), sizeof(uint32_t));
-
-    // store the raw atlas data
-    outFile.write(reinterpret_cast<const char*>(fontAtlas.data()), static_cast<std::streamsize>(fontAtlas.size()));
-
-    outFile.close();
-}
-
-bool TextRenderer::loadAtlasFromFile(std::vector<uint8_t>& fontAtlas, uint32_t& atlasWidth, uint32_t& atlasHeight) {
-    std::string fontAtlasPath = fontPath + "/generated/" + fontToUse + ".bin";
-
-    std::ifstream inFile(fontAtlasPath, std::ios::binary);
-
-    if (!inFile.is_open()) {
-        std::cerr << "existing font atlas not found, recreating...";
-        return false;
-    }
-
-    // read in atlas dimensions
-    inFile.read(reinterpret_cast<char*>(&atlasWidth), sizeof(uint32_t));
-    inFile.read(reinterpret_cast<char*>(&atlasHeight), sizeof(uint32_t));
-    size_t imageSize = atlasWidth * atlasHeight * 4;
-
-    // read in the raw image data
-    fontAtlas.resize(imageSize);
-    inFile.read(reinterpret_cast<char*>(fontAtlas.data()), static_cast<std::streamsize>(imageSize));
-
-    inFile.close();
-    return true;
-}
