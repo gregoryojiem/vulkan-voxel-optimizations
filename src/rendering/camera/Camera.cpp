@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+UniformBufferObject Camera::ubo;
+
 void Camera::init(uint32_t width, uint32_t height) {
     position = glm::vec3(0.0f, 0.0f, 5.0f);
     up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -16,11 +18,15 @@ void Camera::init(uint32_t width, uint32_t height) {
     movementSpeed = 90.0f;
     horzMouseSens = 200.0f;
     vertMouseSens = 200.0f;
+    textScale = 30.0f;
 
     ubo.model = glm::mat4(1.0f);
     ubo.view = glm::lookAt(position, glm::vec3(0.0f, 2.0f, 0.0f), up);
     ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 10000.0f);
+    ubo.textView = glm::lookAt(position, glm::vec3(0.0f, 0.0f, 0.0f), up);
+    ubo.textProj = glm::perspective(glm::radians(textScale), width / (float) height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
+    ubo.textProj[1][1] *= -1;
 }
 
 

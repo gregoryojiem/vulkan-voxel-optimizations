@@ -11,11 +11,13 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
+    alignas(16) glm::mat4 textView;
+    alignas(16) glm::mat4 textProj;
 };
 
 class Camera {
 public:
-    UniformBufferObject ubo;
+    static UniformBufferObject ubo;
 
     void init(uint32_t width, uint32_t height);
     void update(float deltaTime);
@@ -33,6 +35,7 @@ private:
     float movementSpeed;
     float horzMouseSens;
     float vertMouseSens;
+    float textScale;
 };
 
 #endif //CAMERA_H
