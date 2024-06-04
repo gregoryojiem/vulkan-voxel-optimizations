@@ -11,7 +11,13 @@ struct Character {
     glm::vec4 planeQuad; //in the form of left, bottom, right top, with left bottom being on the baseline
     glm::vec4 atlasQuad;
     double advance;
-    char id;
+};
+
+struct ScreenText {
+    std::string text;
+    glm::vec2 position;
+    float scale;
+    uint32_t id;
 };
 
 class TextRenderer {
@@ -20,14 +26,24 @@ public:
     static void cleanup();
     static void recordDrawCommands(VkCommandBuffer commandBuffer, uint32_t currentFrame);
 
+    static void addText(const std::string& text, const glm::vec2& position, float scale, uint32_t id);
+    static void generateTextQuads();
+
 private:
+    static int atlasWidth;
+    static int atlasHeight;
+
+    static std::vector<TexturedVertex> textQuadVertices;
+    static std::vector<uint32_t> textQuadIndices;
+
+    static std::vector<ScreenText> activeText;
     static std::map<char, Character> characters;
     const static std::string fontPath;
     const static std::string fontToUse;
-    const static uint32_t fontSize;
 
     static VkBuffer textVertexBuffer;
     static VkDeviceMemory textVertexBufferMemory;
+    static uint32_t textVertexMemorySize;
 
     static VkBuffer textIndexBuffer;
     static VkDeviceMemory textIndexBufferMemory;
@@ -35,6 +51,10 @@ private:
     static std::vector<VkBuffer> textUniformBuffers;
     static std::vector<VkDeviceMemory> textUniformBuffersMemory;
     static std::vector<void*> textUniformBuffersMapped;
+
+    static VkBuffer textDrawParamsBuffer;
+    static VkDeviceMemory textDrawParamsBufferMemory;
+    static uint32_t textDrawParamsMemorySize;
 
     static VkImage fontAtlasImage;
     static VkDeviceMemory fontAtlasMemory;
@@ -45,30 +65,19 @@ private:
     static VkDescriptorPool textDescriptorPool;
     static std::vector<VkDescriptorSet> textDescriptorSets;
 
-    static VkRenderPass renderPass;
     static VkPipelineLayout pipelineLayout;
     static VkPipeline textGraphicsPipeline;
 
-    static void getFontAtlasGlyphs();
-    static void createFontAtlasVkImage();
+    static uint32_t longestTextSeen;
 
+    static void getFontAtlasGlyphs();
+
+    static void createQuadBuffers(uint32_t newTextSize);
     static void descriptorInit();
     static void createTextDescriptorPool();
     static void createTextDescriptorSets();
+    static void createFontAtlasVkImage();
+    static bool createDrawParamsBuffer(uint32_t drawCount);
 };
-
-const int atlasSize = 512/2;
-const std::vector<TexturedVertex> vertices = {
-    {{atlasSize * -1.0f, atlasSize * -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    {{atlasSize * 1.0f, atlasSize * -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-    {{atlasSize * 1.0f, atlasSize * 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-    {{atlasSize * -1.0f, atlasSize * 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
-};
-
-const std::vector<uint32_t> indices = {
-    0, 1, 2,
-    2, 3, 0
-};
-
 
 #endif //TEXTRENDERER_H
