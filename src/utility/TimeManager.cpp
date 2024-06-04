@@ -4,9 +4,17 @@
 
 #include "TimeManager.h"
 
-float TimeManager::getDeltaTime() {
+std::chrono::time_point<std::chrono::high_resolution_clock> TimeManager::lastTime = std::chrono::high_resolution_clock::now();
+float TimeManager::deltaTime;
+
+float TimeManager::setDeltaTime() {
     auto currentTime = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float> deltaTime = currentTime - lastTime;
+    std::chrono::duration<float> newDeltaTime = currentTime - lastTime;
     lastTime = currentTime;
-    return deltaTime.count();
+    deltaTime = newDeltaTime.count();
+    return deltaTime;
+}
+
+float TimeManager::getDeltaTime() {
+    return deltaTime;
 }
