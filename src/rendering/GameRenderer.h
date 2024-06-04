@@ -36,12 +36,14 @@ public:
     void drawFrame();
     void cleanup();
 
-    uint32_t getWidth();
-    uint32_t getHeight();
-    VkDevice getDevice();
+    static uint32_t getWidth();
+    static uint32_t getHeight();
+    static VkDevice getDevice();
 
     static void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
+
+    static void destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory);
 
     template <typename VertexType>
     static void createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, uint32_t memorySize,
@@ -72,7 +74,8 @@ public:
         const std::vector<char>& vertShaderCode, const std::vector<char>& fragShaderCode,
         const VkVertexInputBindingDescription& bindingDescription,
         const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions,
-        VkDescriptorSetLayout& descriptorSetLayout);
+        VkDescriptorSetLayout& descriptorSetLayout,
+        bool depthEnabled);
 
     static std::vector<char> readFile(const std::string &filename);
 
@@ -107,9 +110,9 @@ private:
     static std::vector<VkSemaphore> imageAvailableSemaphores;
     static std::vector<VkSemaphore> renderFinishedSemaphores;
     static std::vector<VkFence> inFlightFences;
-    uint32_t currentFrame = 0;
+    static uint32_t currentFrame;
 
-    bool framebufferResized = false;
+    static bool framebufferResized;
 
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
@@ -194,7 +197,7 @@ private:
 
     void createDescriptorSets();
 
-    bool createDrawParamsAndBindVBuffer();
+    bool createDrawParamsBuffer();
 
     static void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 

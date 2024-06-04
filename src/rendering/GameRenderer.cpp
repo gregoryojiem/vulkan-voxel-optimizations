@@ -54,6 +54,9 @@ std::vector<VkDescriptorSet> GameRenderer::descriptorSets;
 std::vector<VkSemaphore> GameRenderer::imageAvailableSemaphores;
 std::vector<VkSemaphore> GameRenderer::renderFinishedSemaphores;
 std::vector<VkFence> GameRenderer::inFlightFences;
+uint32_t GameRenderer::currentFrame = 0;
+
+bool GameRenderer::framebufferResized = false;
 
 const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -99,7 +102,8 @@ void GameRenderer::initVulkan() {
         readFile("src/rendering/shaders/frag.spv"),
         ChunkVertex::getBindingDescription(),
         ChunkVertex::getAttributeDescriptions(),
-        descriptorSetLayout);
+        descriptorSetLayout,
+        true);
     createCommandPool();
     createDepthResources();
     createFramebuffers();
@@ -113,6 +117,38 @@ void GameRenderer::initVulkan() {
     createCommandBuffers();
     createSyncObjects();
     TextRenderer::init();
+}
+
+static std::vector<float> frameTimes;
+static float timeBetweenDisplay = 0.25f;
+static float accumulatedTime = 0;
+
+void printFPS() {
+    float deltaTime = TimeManager::getDeltaTime();
+    frameTimes.push_back(deltaTime);
+    accumulatedTime += deltaTime;
+
+    if (accumulatedTime < timeBetweenDisplay) {
+        return;
+    }
+
+    accumulatedTime = 0;
+
+    float totalTime = 0;
+    for (const auto& time : frameTimes) {
+        totalTime += time;
+    }
+
+    float fps = static_cast<float>(frameTimes.size()) / totalTime;
+
+    frameTimes = { };
+
+    std::stringstream ss;
+    ss << "fps: " << fps;
+    std::string fpsString = ss.str();
+    TextRenderer::addText(fpsString, glm::vec2(5.0f, GameRenderer::getHeight()-24), 24.0f, 1);
+
+    accumulatedTime = 0;
 }
 
 void GameRenderer::drawFrame() {
@@ -142,6 +178,8 @@ void GameRenderer::drawFrame() {
     if (sizeof(globalChunkIndices[0]) * globalChunkIndices.size() > indexMemorySize) {
         createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
     }
+
+    printFPS();
 
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
@@ -719,7 +757,8 @@ void GameRenderer::createGraphicsPipeline(VkPipelineLayout& pipelineLayout, VkPi
     const std::vector<char>& vertShaderCode, const std::vector<char>& fragShaderCode,
     const VkVertexInputBindingDescription& bindingDescription,
     const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions,
-    VkDescriptorSetLayout& descriptorSetLayout) {
+    VkDescriptorSetLayout& descriptorSetLayout,
+    bool depthEnabled) {
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
@@ -792,7 +831,12 @@ void GameRenderer::createGraphicsPipeline(VkPipelineLayout& pipelineLayout, VkPi
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
+
+    if (depthEnabled) {
+        depthStencil.depthTestEnable = VK_TRUE;
+    } else {
+        depthStencil.depthTestEnable = VK_FALSE;
+    }
     depthStencil.depthWriteEnable = VK_TRUE;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
@@ -1111,6 +1155,14 @@ void GameRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
+void GameRenderer::destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory) {
+    if (buffer != nullptr) {
+        vkDeviceWaitIdle(device);
+        vkDestroyBuffer(device, buffer, nullptr);
+        vkFreeMemory(device, bufferMemory, nullptr);
+    }
+}
+
 template void GameRenderer::createVertexBuffer<TexturedVertex>(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, uint32_t memorySize,
     const std::vector<TexturedVertex>& vertices);
 
@@ -1157,7 +1209,7 @@ void GameRenderer::createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& inde
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-bool GameRenderer::createDrawParamsAndBindVBuffer() {
+bool GameRenderer::createDrawParamsBuffer() {
     const VkDeviceSize bufferSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedIndexRanges().size();
 
     if (bufferSize == 0) {
@@ -1181,7 +1233,10 @@ bool GameRenderer::createDrawParamsAndBindVBuffer() {
         command.vertexOffset = static_cast<int32_t>(offset);
         command.firstInstance = 0;
 
-        memcpy((char*)data + commandIndex * sizeof(VkDrawIndexedIndirectCommand), &command, sizeof(VkDrawIndexedIndirectCommand));
+        memcpy(static_cast<char*>(data) + commandIndex * sizeof(VkDrawIndexedIndirectCommand),
+                    &command,
+                    sizeof(VkDrawIndexedIndirectCommand));
+
         commandIndex++;
     }
 
@@ -1324,7 +1379,7 @@ void GameRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
         0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    if (createDrawParamsAndBindVBuffer()) {
+    if (createDrawParamsBuffer()) {
         uint32_t drawCount = VertexPool::getOccupiedIndexRanges().size();
         vkCmdDrawIndexedIndirect(commandBuffer, drawParamsBuffer, 0, drawCount, sizeof(VkDrawIndexedIndirectCommand));
     }
