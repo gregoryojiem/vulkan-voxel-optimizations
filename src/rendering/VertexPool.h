@@ -37,6 +37,8 @@ private:
     static ChunkMemoryRange getAvailableMemoryRange(std::vector<ChunkMemoryRange>& occupiedRanges,
         std::vector<ChunkMemoryRange>& freeMemoryRanges, const Chunk& chunk, uint32_t offset, uint16_t objectCount,
         bool poolType);
+    static void initMemoryRangeInfo(ChunkMemoryRange& rangeToUse, bool poolType, uint32_t chunkID,
+    uint32_t offset, uint32_t objectCount);
     static ChunkMemoryRange splitUpAvailableMemory(std::vector<ChunkMemoryRange>& freeMemoryRanges,
         const ChunkMemoryRange* rangeToSplit, uint32_t requiredSpace);
     static ChunkMemoryRange resizePool(bool poolType);
