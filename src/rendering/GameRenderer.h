@@ -5,14 +5,14 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <stdexcept>
-#include <cstring>
 #include <optional>
 
-#include "../utility/TimeManager.h"
 #include "camera/Camera.h"
 
 extern uint32_t WIDTH;
 extern uint32_t HEIGHT;
+const extern bool DISPLAY_EXTENSIONS;
+const extern int MAX_FRAMES_IN_FLIGHT;
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -30,65 +30,101 @@ struct SwapChainSupportDetails {
 class GameRenderer {
 public:
     GLFWwindow *window;
+    static VkDevice device;
 
     void init();
-    void drawFrame(UniformBufferObject ubo);
+    void drawFrame();
     void cleanup();
 
-    uint32_t getWidth();
-    uint32_t getHeight();
-    VkDevice getDevice();
-    void createVertexBuffer();
+    static uint32_t getWidth();
+    static uint32_t getHeight();
+    static VkDevice getDevice();
 
-    void createIndexBuffer();
+    static void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
+        VkDeviceMemory& bufferMemory);
+
+    static void destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory);
+
+    template <typename VertexType>
+    static void createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, uint32_t memorySize,
+        const std::vector<VertexType>& vertices);
+
+    static void createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory, uint32_t memorySize,
+        const std::vector<uint32_t>& indices);
+
+    static void createUniformBuffers(std::vector<VkBuffer>& uniformBuffers,
+        std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped);
+
+    static VkCommandBuffer beginSingleTimeCommands();
+    static void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+    static void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+    static VkImageView createTextureImageView(VkImage& textureImage);
+    static void createTextureSampler(VkSampler& textureSampler);
+
+    static void copyBufferToImage(VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height);
+    static void transitionImageLayout(VkImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+    static void createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, bool includeSamplerDescriptor);
+
+    static void createRenderPass(VkRenderPass& renderPass);
+
+    static void createGraphicsPipeline(VkPipelineLayout& pipelineLayout, VkPipeline& graphicsPipeline,
+        const std::vector<char>& vertShaderCode, const std::vector<char>& fragShaderCode,
+        const VkVertexInputBindingDescription& bindingDescription,
+        const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions,
+        VkDescriptorSetLayout& descriptorSetLayout,
+        bool depthEnabled);
+
+    static std::vector<char> readFile(const std::string &filename);
 
 private:
-    VkInstance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
+    static VkInstance instance;
+    static VkDebugUtilsMessengerEXT debugMessenger;
+    static VkSurfaceKHR surface;
 
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDevice device;
+    static VkPhysicalDevice physicalDevice;
 
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
+    static VkQueue graphicsQueue;
+    static VkQueue presentQueue;
 
-    VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
+    static VkSwapchainKHR swapChain;
+    static std::vector<VkImage> swapChainImages;
+    static VkFormat swapChainImageFormat;
+    static VkExtent2D swapChainExtent;
+    static std::vector<VkImageView> swapChainImageViews;
+    static std::vector<VkFramebuffer> swapChainFramebuffers;
 
-    VkRenderPass renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+    static VkRenderPass renderPass;
+    static VkPipelineLayout pipelineLayout;
+    static VkPipeline graphicsPipeline;
 
-    VkCommandPool commandPool;
-    std::vector<VkCommandBuffer> commandBuffers;
+    static VkCommandPool commandPool;
+    static std::vector<VkCommandBuffer> commandBuffers;
 
-    VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    static VkDescriptorSetLayout descriptorSetLayout;
+    static VkDescriptorPool descriptorPool;
+    static std::vector<VkDescriptorSet> descriptorSets;
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
-    uint32_t currentFrame = 0;
+    static std::vector<VkSemaphore> imageAvailableSemaphores;
+    static std::vector<VkSemaphore> renderFinishedSemaphores;
+    static std::vector<VkFence> inFlightFences;
+    static uint32_t currentFrame;
 
-    bool framebufferResized = false;
+    static bool framebufferResized;
 
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
-    unsigned long long vertexMemorySize = 0;
+    uint32_t vertexMemorySize = 0;
 
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
-    unsigned long long indexMemorySize = 0;
+    uint32_t indexMemorySize = 0;
 
     VkBuffer drawParamsBuffer;
     VkDeviceMemory drawParamsBufferMemory;
-    unsigned long long drawParamsMemorySize = 0;
+    uint32_t drawParamsMemorySize = 0;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -134,17 +170,11 @@ private:
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
-    void createImageViews();
+    static void createImageViews();
 
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+    static VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
-    void createRenderPass();
-
-    void createDescriptorSetLayout();
-
-    void createGraphicsPipeline();
-
-    VkShaderModule createShaderModule(const std::vector<char> &code);
+    static VkShaderModule createShaderModule(const std::vector<char> &code);
 
     void createFramebuffers();
 
@@ -156,30 +186,20 @@ private:
 
     void createDepthResources();
 
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-        VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-
-    VkFormat findDepthFormat();
+    static VkFormat findDepthFormat();
 
     bool hasStencilComponent(VkFormat format);
 
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+    static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
         VkFormatFeatureFlags features);
 
     void createDescriptorPool();
 
     void createDescriptorSets();
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-        VkDeviceMemory& bufferMemory);
+    bool createDrawParamsBuffer();
 
-    bool createDrawParamsAndBindVBuffer();
-
-    void createUniformBuffers();
-
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    static void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     void createCommandBuffers();
 
@@ -187,9 +207,9 @@ private:
 
     void createSyncObjects();
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+    static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-    static std::vector<char> readFile(const std::string &filename);
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

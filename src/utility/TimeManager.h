@@ -5,12 +5,12 @@
 
 class TimeManager {
 public:
-    TimeManager() : lastTime(std::chrono::high_resolution_clock::now()) {}
-
-    float getDeltaTime();
+    static float setDeltaTime();
+    static float getDeltaTime();
 
 private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
+    static std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
+    static float deltaTime;
 };
 
 #endif //TIMEMANAGER_H

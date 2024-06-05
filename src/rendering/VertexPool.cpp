@@ -1,12 +1,12 @@
 #include "VertexPool.h"
 
-std::vector<Vertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
+std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::vector<uint32_t> globalChunkIndices(CHUNK_INDICES_SIZE);
 
 std::vector<ChunkMemoryRange> VertexPool::occupiedVertexRanges;
 std::vector<ChunkMemoryRange> VertexPool::occupiedIndexRanges;
 std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, 0, CHUNK_VERTICES_SIZE}};
-std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, 0, CHUNK_VERTICES_SIZE}};;
+std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, 0, CHUNK_VERTICES_SIZE}};
 
 void VertexPool::addToVertexPool(const Chunk& chunk) {
     ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunk,
@@ -35,7 +35,10 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::vector<ChunkMemoryRang
         }
 
         if (it->chunkID == chunk.ID) {
+            it->chunkID = 0;
+            freeMemoryRanges.push_back(*it);
             occupiedRanges.erase(it);
+            break;
         }
     }
 

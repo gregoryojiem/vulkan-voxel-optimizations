@@ -6,13 +6,13 @@
 #include "Vertex.h"
 #include "../game/ChunkManager.h"
 
-constexpr size_t VERTEX_SIZE = sizeof(Vertex);
+constexpr size_t VERTEX_SIZE = sizeof(ChunkVertex);
 const static std::vector<uint32_t> powersOfTwo = { 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768 };
 
 static constexpr size_t CHUNK_VERTICES_SIZE = (8 * 8 * 8) * 8;
 static constexpr size_t CHUNK_INDICES_SIZE = (8 * 8 * 8) * 64; //there are 36 indices but we round up to 64
 
-extern std::vector<Vertex> globalChunkVertices;
+extern std::vector<ChunkVertex> globalChunkVertices;
 extern std::vector<uint32_t> globalChunkIndices;
 
 struct ChunkMemoryRange{

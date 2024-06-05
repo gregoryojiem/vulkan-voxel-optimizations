@@ -7,6 +7,7 @@
 
 class World {
 public:
+    World();
     void init();
     void mainLoop();
     void addBlock(Block block);
@@ -16,6 +17,7 @@ public:
 private:
     ChunkManager chunkManager;
     std::vector<Block> worldBlocks;
+    uint32_t seed;
 };
 
 
