@@ -1,10 +1,14 @@
 #include "World.h"
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <cmath>
 
 #include "../rendering/Vertex.h"
 #include "FastNoiseLite.h"
+#include "../utility/TimeManager.h"
+#include "../utility/TextUtil.h"
 
 World::World() : seed(2) { }
 
@@ -30,7 +34,8 @@ void World::init() {
 
     addBlock(yellowBlock);
 
-    int range = 0;
+    TimeManager::startTimer();
+    int range = 1000;
     for (int x = -range; x < range; x++)
     {
         for (int z = -range; z < range; z++)
@@ -45,6 +50,10 @@ void World::init() {
             addBlock(greenBlock);
         }
     }
+    float timeElapsed = TimeManager::finishTimer();
+    std::string numBlocks = TextUtil::getCommaString(range * range * 4);
+
+    std::cout << "Finished generating " << numBlocks << " blocks. Time elapsed: " << timeElapsed << " seconds.\n\n";
 
     range = 0;
     for (int x = -range; x < range; ++x) {
@@ -52,22 +61,23 @@ void World::init() {
             float height = 0.5f + (rand() % 100) / 100.0f;
             height += 0.2f * (x / 10.0f) + 0.2f * (z / 10.0f);
 
-            Block block = (height > 0.7f) ? greenBlock : pinkBlock;
+            Block block = height > 0.7f ? greenBlock : pinkBlock;
             block.position = glm::vec3(x, static_cast<int>(height * 5.0f), z);
             addBlock(block);
         }
     }
+    TimeManager::startTimer();
     chunkManager.meshAllChunks();
+    timeElapsed = TimeManager::finishTimer();
+    std::cout << "Finished meshing " << chunkManager.chunkCount() << " chunks."
+    << " Time elapsed: "<< timeElapsed << " seconds.\n\n";
 }
 
 static int counter = 0;
-
 void World::mainLoop() {
-    counter++;
-
-    if (counter % 10 == 0) {
+    if (counter % 1 == 0) {
         glm::vec3 blockPos = {
-            counter/10,
+            counter/1,
             2,
             0
         };
