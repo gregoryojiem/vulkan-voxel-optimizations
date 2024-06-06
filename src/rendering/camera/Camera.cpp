@@ -15,7 +15,7 @@ void Camera::init(uint32_t width, uint32_t height) {
     yaw = 0.0f;
     pitch = 0.0f;
     fovy = 45.0f;
-    movementSpeed = 90.0f;
+    movementSpeed = 30.0f;
     horzMouseSens = 200.0f;
     vertMouseSens = 200.0f;
     textScale = 90.0f;

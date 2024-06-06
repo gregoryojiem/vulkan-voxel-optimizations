@@ -28,6 +28,7 @@ void World::generateNoisyTerrain(int range) {
 }
 
 void World::generateTerrainFromNoise(int range) {
+    range = range/2;
     for (int x = -range; x < range; x++)
     {
         for (int z = -range; z < range; z++)
@@ -46,10 +47,10 @@ void World::generateTerrainFromNoise(int range) {
 
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    addBlock(yellowBlock);
+    //addBlock(yellowBlock);
 
-    int range = 1000;
-    int numBlocks = range * range * 4;
+    int range = 2000;
+    int numBlocks = range * range;
     std::cout << "Started generating terrain! There are " << TextUtil::getCommaString(numBlocks) << " voxels!\n";
 
     TimeManager::startTimer("generateTerrain");
@@ -59,7 +60,7 @@ void World::init() {
     std::cout << "Started meshing!\n";
 
     TimeManager::startTimer("meshAllChunks");
-    ChunkManager::meshAllChunks();
+    chunkManager.meshAllChunks();
     TimeManager::addTimeToProfiler("meshAllChunks", TimeManager::finishTimer("meshAllChunks"));
 
     TimeManager::printAllProfiling();
