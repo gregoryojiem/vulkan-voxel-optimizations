@@ -87,27 +87,50 @@ void ChunkManager::createChunk(const glm::vec3& worldPos) {
 void ChunkManager::meshChunk(Chunk& chunk) {
     chunk.vertices = { };
     chunk.indices = { };
+    std::array<bool, 6> facesToDraw;
 
-    for (auto topNode : chunk.octree->children) {
+    for (auto& topNode : chunk.octree->children) {
         if (topNode == nullptr) {
             continue;
         }
-        for (auto middleNode : topNode->children) {
+        for (auto& middleNode : topNode->children) {
             if (middleNode == nullptr) {
                 continue;
             }
             for (auto blockNode : middleNode->children) {
                 if (blockNode != nullptr) {
-                    std::vector<ChunkVertex> blockVertices = generateBlockVertices(*blockNode->block);
-                    std::vector<uint32_t> blockIndices = generateBlockIndices(chunk.vertices.size());
-                    chunk.vertices.insert(chunk.vertices.end(), blockVertices.begin(), blockVertices.end());
-                    chunk.indices.insert(chunk.indices.end(), blockIndices.begin(), blockIndices.end());
+                    generateBlockMesh(chunk, blockNode->block, facesToDraw);
                 }
             }
         }
     }
 
     chunk.geometryModified = false;
+}
+
+void ChunkManager::generateBlockMesh(Chunk& chunk, Block* block, std::array<bool, 6>& facesToDraw) {
+    std::fill(facesToDraw.begin(), facesToDraw.end(), true);
+    if (hasBlock(block->position + glm::vec3(0, 1, 0))) {
+        facesToDraw[0] = false;
+    }
+    if (hasBlock(block->position + glm::vec3(0, -1, 0))) {
+        facesToDraw[1] = false;
+    }
+    if (hasBlock(block->position + glm::vec3(0, 0, 1))) {
+        facesToDraw[2] = false;
+    }
+    if (hasBlock(block->position + glm::vec3(0, 0, -1))) {
+        facesToDraw[3] = false;
+    }
+    if (hasBlock(block->position + glm::vec3(1, 0, 0))) {
+        facesToDraw[4] = false;
+    }
+    if (hasBlock(block->position + glm::vec3(-1, 0, 0))) {
+        facesToDraw[5] = false;
+    }
+
+    insertBlockIndices(chunk.indices, facesToDraw, chunk.vertices.size());
+    insertBlockVertices(chunk.vertices, facesToDraw, block);
 }
 
 void ChunkManager::addBlock(const Block& block) {

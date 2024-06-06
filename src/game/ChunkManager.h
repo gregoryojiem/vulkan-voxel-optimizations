@@ -60,14 +60,16 @@ public:
 
     Chunk* getChunk(const glm::vec3& worldPos);
     void createChunk(const glm::vec3& worldPos);
+    void fillChunk(const glm::vec3& worldPos, Block block);
+    void meshChunk(Chunk& chunk);
+    void meshAllChunks();
+    size_t chunkCount();
+
     void addBlock(const Block& block);
     Block* getBlock(const glm::vec3& worldPos);
     bool hasBlock(const glm::vec3& worldPos);
     void removeBlock(const glm::vec3& worldPos);
-    void fillChunk(const glm::vec3& worldPos, Block block);
-    static void meshChunk(Chunk& chunk);
-    static void meshAllChunks();
-    size_t chunkCount();
+    void generateBlockMesh(Chunk& chunk, Block* block, std::array<bool, 6>& facesToDraw);
 
 private:
     OctreeNode* findOctreeNode(const glm::vec3& worldPos);
