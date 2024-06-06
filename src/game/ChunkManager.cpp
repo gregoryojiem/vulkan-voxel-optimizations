@@ -240,3 +240,7 @@ void ChunkManager::meshAllChunks() {
         }
     }
 }
+
+size_t ChunkManager::chunkCount() {
+    return chunks.size();
+}

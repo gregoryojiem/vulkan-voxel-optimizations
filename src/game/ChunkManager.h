@@ -67,6 +67,7 @@ public:
     void removeBlock(const glm::vec3& worldPos);
     void fillChunk(const glm::vec3& worldPos, Block block);
     void meshAllChunks();
+    size_t chunkCount();
 
 private:
     OctreeNode* findOctreeNode(const glm::vec3& worldPos);
