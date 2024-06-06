@@ -21,11 +21,13 @@ struct ChunkMemoryRange{
     uint32_t endPos;
     uint32_t offset;
     uint16_t objectCount;
+    bool savedToVBuffer;
 };
 
 class VertexPool {
 public:
     static void addToVertexPool(const Chunk& chunk);
+    static std::vector<ChunkMemoryRange>& getOccupiedVertexRanges();
     static std::vector<ChunkMemoryRange>& getOccupiedIndexRanges();
 
 private:
