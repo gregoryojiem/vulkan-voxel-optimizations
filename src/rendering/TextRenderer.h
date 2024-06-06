@@ -44,6 +44,8 @@ private:
     static VkBuffer textVertexBuffer;
     static VkDeviceMemory textVertexBufferMemory;
     static uint32_t textVertexMemorySize;
+    static VkBuffer textStagingBuffer;
+    static VkDeviceMemory textStagingBufferMemory;
 
     static VkBuffer textIndexBuffer;
     static VkDeviceMemory textIndexBufferMemory;
@@ -72,7 +74,10 @@ private:
 
     static void getFontAtlasGlyphs();
 
-    static void createQuadBuffers(uint32_t newTextSize);
+    static void createQuadBuffers(uint32_t textSize);
+    static void updateVertexBuffer();
+    static void createVertexBuffer();
+    static void createIndexBuffer(uint32_t textSize);
     static void descriptorInit();
     static void createTextDescriptorPool();
     static void createTextDescriptorSets();

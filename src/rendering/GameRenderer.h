@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <optional>
 
+#include "VertexPool.h"
 #include "camera/Camera.h"
 
 extern uint32_t WIDTH;
@@ -18,7 +19,7 @@ struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
 
-    bool isComplete();
+    [[nodiscard]] bool isComplete() const;
 };
 
 struct SwapChainSupportDetails {
@@ -29,12 +30,12 @@ struct SwapChainSupportDetails {
 
 class GameRenderer {
 public:
-    GLFWwindow *window;
+    static GLFWwindow* window;
     static VkDevice device;
 
     void init();
-    void drawFrame();
-    void cleanup();
+    static void drawFrame();
+    static void cleanup();
 
     static uint32_t getWidth();
     static uint32_t getHeight();
@@ -43,14 +44,22 @@ public:
     static void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
-    static void destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory);
+    static void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    static void destroyBuffer(const VkBuffer& buffer, const VkDeviceMemory& bufferMemory);
 
     template <typename VertexType>
-    static void createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, uint32_t memorySize,
+    static void createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, VkDeviceSize bufferSize,
         const std::vector<VertexType>& vertices);
 
-    static void createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory, uint32_t memorySize,
+    static void createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory, VkDeviceSize bufferSize,
         const std::vector<uint32_t>& indices);
+
+    static void updateBuffer(const VkBuffer& buffer,
+    const VkBuffer& stagingBuffer, const VkDeviceMemory& stagingBufferMemory, void* newData,
+    std::vector<ChunkMemoryRange>& memoryRanges, VkDeviceSize bufferSize, uint32_t objectSize);
+
+    static void resizeBufferCheck();
 
     static void createUniformBuffers(std::vector<VkBuffer>& uniformBuffers,
         std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped);
@@ -60,11 +69,11 @@ public:
 
     static void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-    static VkImageView createTextureImageView(VkImage& textureImage);
+    static VkImageView createTextureImageView(const VkImage& textureImage);
     static void createTextureSampler(VkSampler& textureSampler);
 
-    static void copyBufferToImage(VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height);
-    static void transitionImageLayout(VkImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+    static void copyBufferToImage(const VkBuffer& buffer, const VkImage& image, uint32_t width, uint32_t height);
+    static void transitionImageLayout(const VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     static void createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, bool includeSamplerDescriptor);
 
@@ -114,61 +123,65 @@ private:
 
     static bool framebufferResized;
 
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    uint32_t vertexMemorySize = 0;
+    static VkBuffer vertexBuffer;
+    static VkDeviceMemory vertexBufferMemory;
+    static uint32_t vertexMemorySize;
+    static VkBuffer vertexStagingBuffer;
+    static VkDeviceMemory vertexStagingBufferMemory;
 
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-    uint32_t indexMemorySize = 0;
+    static VkBuffer indexBuffer;
+    static VkDeviceMemory indexBufferMemory;
+    static uint32_t indexMemorySize;
+    static VkBuffer indexStagingBuffer;
+    static VkDeviceMemory indexStagingBufferMemory;
 
-    VkBuffer drawParamsBuffer;
-    VkDeviceMemory drawParamsBufferMemory;
-    uint32_t drawParamsMemorySize = 0;
+    static VkBuffer drawParamsBuffer;
+    static VkDeviceMemory drawParamsBufferMemory;
+    static uint32_t drawParamsMemorySize;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
+    static std::vector<VkBuffer> uniformBuffers;
+    static std::vector<VkDeviceMemory> uniformBuffersMemory;
+    static std::vector<void*> uniformBuffersMapped;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    static VkImage depthImage;
+    static VkDeviceMemory depthImageMemory;
+    static VkImageView depthImageView;
 
     void initWindow();
 
-    void initVulkan();
+    static void initVulkan();
 
-    void createInstance();
+    static void createInstance();
 
-    bool checkValidationLayerSupport();
+    static bool checkValidationLayerSupport();
 
-    std::vector<const char *> getRequiredExtensions();
+    static std::vector<const char*> getRequiredExtensions();
 
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+    static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
-    void setupDebugMessenger();
+    static void setupDebugMessenger();
 
-    void createSurface();
+    static void createSurface();
 
-    void pickPhysicalDevice();
+    static void pickPhysicalDevice();
 
-    bool isDeviceSuitable(VkPhysicalDevice device);
+    static bool isDeviceSuitable(VkPhysicalDevice device);
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+    static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
-    void createLogicalDevice();
+    static void createLogicalDevice();
 
-    void createSwapChain();
+    static void createSwapChain();
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
+    static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
 
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
+    static VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
 
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+    static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
     static void createImageViews();
 
@@ -176,36 +189,37 @@ private:
 
     static VkShaderModule createShaderModule(const std::vector<char> &code);
 
-    void createFramebuffers();
+    static void createFramebuffers();
 
-    void cleanupSwapChain();
+    static void cleanupSwapChain();
 
-    void recreateSwapChain();
+    static void recreateSwapChain();
 
-    void createCommandPool();
+    static void createCommandPool();
 
-    void createDepthResources();
+    static void createDepthResources();
 
     static VkFormat findDepthFormat();
 
-    bool hasStencilComponent(VkFormat format);
+    static bool hasStencilComponent(VkFormat format);
 
     static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
         VkFormatFeatureFlags features);
 
-    void createDescriptorPool();
+    static void createDescriptorPool();
 
-    void createDescriptorSets();
+    static void createDescriptorSets();
 
-    bool createDrawParamsBuffer();
+    static bool createDrawParamsBuffer();
 
-    static void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    static void copyBufferRanges(VkBuffer srcBuffer, VkBuffer dstBuffer, std::vector<ChunkMemoryRange>& memoryRanges,
+        uint32_t objectSize);
 
-    void createCommandBuffers();
+    static void createCommandBuffers();
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    static void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-    void createSyncObjects();
+    static void createSyncObjects();
 
     static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
@@ -214,16 +228,16 @@ private:
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-        void *pUserData);
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
 
     static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
-                                                 const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                                 const VkAllocationCallbacks *pAllocator,
-                                                 VkDebugUtilsMessengerEXT *pDebugMessenger);
+                                                 const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                                 const VkAllocationCallbacks* pAllocator,
+                                                 VkDebugUtilsMessengerEXT* pDebugMessenger);
 
     static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                              const VkAllocationCallbacks *pAllocator);
+                                              const VkAllocationCallbacks* pAllocator);
 };
 
 #endif //GAMERENDERER_H
