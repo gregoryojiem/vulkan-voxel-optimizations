@@ -9,8 +9,8 @@ std::vector<uint32_t> globalChunkIndices(CHUNK_INDICES_SIZE);
 
 std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
 std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedIndexRanges;
-std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, 0, CHUNK_VERTICES_SIZE}};
-std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, 0, CHUNK_INDICES_SIZE}};
+std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES_SIZE, CHUNK_VERTICES_SIZE}};
+std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, CHUNK_INDICES_SIZE, CHUNK_INDICES_SIZE}};
 
 void VertexPool::addToVertexPool(const Chunk& chunk) {
     ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunk,
