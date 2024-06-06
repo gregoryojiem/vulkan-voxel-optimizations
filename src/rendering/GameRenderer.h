@@ -57,7 +57,7 @@ public:
 
     static void updateBuffer(const VkBuffer& buffer,
     const VkBuffer& stagingBuffer, const VkDeviceMemory& stagingBufferMemory, void* newData,
-    std::vector<ChunkMemoryRange>& memoryRanges, VkDeviceSize bufferSize, uint32_t objectSize);
+    std::unordered_map<uint32_t, ChunkMemoryRange>& memoryRanges, VkDeviceSize bufferSize, uint32_t objectSize);
 
     static void resizeBufferCheck();
 
@@ -212,8 +212,8 @@ private:
 
     static bool createDrawParamsBuffer();
 
-    static void copyBufferRanges(VkBuffer srcBuffer, VkBuffer dstBuffer, std::vector<ChunkMemoryRange>& memoryRanges,
-        uint32_t objectSize);
+    static void copyBufferRanges(VkBuffer srcBuffer, VkBuffer dstBuffer,
+        std::unordered_map<uint32_t, ChunkMemoryRange>& memoryRanges, uint32_t objectSize);
 
     static void createCommandBuffers();
 
