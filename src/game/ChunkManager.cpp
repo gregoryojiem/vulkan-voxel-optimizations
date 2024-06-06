@@ -6,6 +6,7 @@
 
 #include "../rendering/VertexPool.h"
 #include "../utility/GraphicsUtil.h"
+#include "../utility/TimeManager.h"
 #include "../rendering/Vertex.h"
 
 std::unordered_map<glm::vec3, Chunk*> ChunkManager::chunks;
@@ -87,18 +88,15 @@ void ChunkManager::meshChunk(Chunk& chunk) {
     chunk.vertices = { };
     chunk.indices = { };
 
-    for (int i = 0; i < 8; i++) {
-        OctreeNode* topNode = chunk.octree->children[i];
+    for (auto topNode : chunk.octree->children) {
         if (topNode == nullptr) {
             continue;
         }
-        for (int j = 0; j < 8; j++) {
-            OctreeNode* middleNode = topNode->children[j];
+        for (auto middleNode : topNode->children) {
             if (middleNode == nullptr) {
                 continue;
             }
-            for (int k = 0; k < 8; k++) {
-                OctreeNode* blockNode = middleNode->children[k];
+            for (auto blockNode : middleNode->children) {
                 if (blockNode != nullptr) {
                     std::vector<ChunkVertex> blockVertices = generateBlockVertices(*blockNode->block);
                     std::vector<uint32_t> blockIndices = generateBlockIndices(chunk.vertices.size());
@@ -234,9 +232,13 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
 void ChunkManager::meshAllChunks() {
     for (auto& [pos, chunk] : chunks) {
         if (chunk->geometryModified) {
+            TimeManager::startTimer("meshChunk");
             meshChunk(*chunk);
-            //todo remove chunk->geometryModified = false;
+            TimeManager::addTimeToProfiler("meshChunk", TimeManager::finishTimer("meshChunk"));
+
+            TimeManager::startTimer("addToVertexPool");
             VertexPool::addToVertexPool(*chunk);
+            TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
         }
     }
 }

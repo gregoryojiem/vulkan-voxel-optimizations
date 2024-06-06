@@ -1,6 +1,7 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <FastNoiseLite.h>
 #include <vector>
 #include "Block.h"
 #include "ChunkManager.h"
@@ -17,7 +18,11 @@ public:
 private:
     ChunkManager chunkManager;
     std::vector<Block> worldBlocks;
+    FastNoiseLite noise;
     uint32_t seed;
+
+    void generateNoisyTerrain(int range);
+    void generateTerrainFromNoise(int range);
 };
 
 
