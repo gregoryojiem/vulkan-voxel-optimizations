@@ -6,7 +6,7 @@ std::vector<uint32_t> globalChunkIndices(CHUNK_INDICES_SIZE);
 std::vector<ChunkMemoryRange> VertexPool::occupiedVertexRanges;
 std::vector<ChunkMemoryRange> VertexPool::occupiedIndexRanges;
 std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, 0, CHUNK_VERTICES_SIZE}};
-std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, 0, CHUNK_VERTICES_SIZE}};
+std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, 0, CHUNK_INDICES_SIZE}};
 
 void VertexPool::addToVertexPool(const Chunk& chunk) {
     ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunk,
@@ -16,6 +16,10 @@ void VertexPool::addToVertexPool(const Chunk& chunk) {
 
     std::copy(chunk.vertices.begin(), chunk.vertices.end(), globalChunkVertices.begin() + vertexRangeToUse.startPos);
     std::copy(chunk.indices.begin(), chunk.indices.end(), globalChunkIndices.begin() + indexRangeToUse.startPos);
+}
+
+std::vector<ChunkMemoryRange>& VertexPool::getOccupiedVertexRanges() {
+    return occupiedVertexRanges;
 }
 
 std::vector<ChunkMemoryRange>& VertexPool::getOccupiedIndexRanges() {
@@ -31,6 +35,7 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::vector<ChunkMemoryRang
     // otherwise, free up the chunk's occupied range and move on
     for (auto it = occupiedRanges.begin(); it != occupiedRanges.end(); ++it) {
         if (it->chunkID == chunk.ID && it->endPos - it->startPos >= requiredObjects) {
+            initMemoryRangeInfo(*it, poolType, chunk.ID, offset, objectCount);
             return *it;
         }
 
@@ -84,13 +89,19 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::vector<ChunkMemoryRang
         rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &resizedRange, requiredObjects);
     }
 
+    initMemoryRangeInfo(rangeToUse, poolType, chunk.ID, offset, objectCount);
+    occupiedRanges.push_back(rangeToUse);
+    return rangeToUse;
+}
+
+void VertexPool::initMemoryRangeInfo(ChunkMemoryRange& rangeToUse, bool poolType, uint32_t chunkID,
+    uint32_t offset, uint32_t objectCount) {
     if (poolType) {
         rangeToUse.offset = offset;
     }
-    rangeToUse.chunkID = chunk.ID;
+    rangeToUse.chunkID = chunkID;
     rangeToUse.objectCount = objectCount;
-    occupiedRanges.push_back(rangeToUse);
-    return rangeToUse;
+    rangeToUse.savedToVBuffer = false;
 }
 
 // required slot must be power of 2
@@ -123,10 +134,10 @@ ChunkMemoryRange VertexPool::resizePool(bool poolType) {
         const uint32_t goalSize = currentSize + CHUNK_VERTICES_SIZE;
         globalChunkVertices.resize(goalSize);
         return {0, currentSize, goalSize};
-    } else {
-        const uint32_t currentSize = globalChunkIndices.size();
-        const uint32_t goalSize = currentSize + CHUNK_INDICES_SIZE;
-        globalChunkIndices.resize(goalSize);
-        return {0, currentSize, goalSize};
     }
+
+    const uint32_t currentSize = globalChunkIndices.size();
+    const uint32_t goalSize = currentSize + CHUNK_INDICES_SIZE;
+    globalChunkIndices.resize(goalSize);
+    return {0, currentSize, goalSize};
 }

@@ -9,12 +9,11 @@
 #include <fstream>
 
 #include "TextRenderer.h"
-#include "VertexPool.h"
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
-const bool enableValidationLayers = true;
+    const bool enableValidationLayers = true;
 #endif
 
 uint32_t WIDTH = 1280;
@@ -22,13 +21,12 @@ uint32_t HEIGHT = 720;
 const bool DISPLAY_EXTENSIONS = false;
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-VkDebugUtilsMessengerEXT GameRenderer::debugMessenger;
+GLFWwindow* GameRenderer::window;
+VkPhysicalDevice GameRenderer::physicalDevice;
+VkDevice GameRenderer::device;
 
 VkInstance GameRenderer::instance;
 VkSurfaceKHR GameRenderer::surface;
-
-VkPhysicalDevice GameRenderer::physicalDevice;
-VkDevice GameRenderer::device;
 
 VkQueue GameRenderer::graphicsQueue;
 VkQueue GameRenderer::presentQueue;
@@ -58,6 +56,32 @@ uint32_t GameRenderer::currentFrame = 0;
 
 bool GameRenderer::framebufferResized = false;
 
+VkBuffer GameRenderer::vertexBuffer;
+VkDeviceMemory GameRenderer::vertexBufferMemory;
+uint32_t GameRenderer::vertexMemorySize = 0;
+VkBuffer GameRenderer::vertexStagingBuffer;
+VkDeviceMemory GameRenderer::vertexStagingBufferMemory;
+
+VkBuffer GameRenderer::indexBuffer;
+VkDeviceMemory GameRenderer::indexBufferMemory;
+uint32_t GameRenderer::indexMemorySize = 0;
+VkBuffer GameRenderer::indexStagingBuffer;
+VkDeviceMemory GameRenderer::indexStagingBufferMemory;
+
+VkBuffer GameRenderer::drawParamsBuffer;
+VkDeviceMemory GameRenderer::drawParamsBufferMemory;
+uint32_t GameRenderer::drawParamsMemorySize = 0;
+
+std::vector<VkBuffer> GameRenderer::uniformBuffers;
+std::vector<VkDeviceMemory> GameRenderer::uniformBuffersMemory;
+std::vector<void*> GameRenderer::uniformBuffersMapped;
+
+VkImage GameRenderer::depthImage;
+VkDeviceMemory GameRenderer::depthImageMemory;
+VkImageView GameRenderer::depthImageView;
+
+VkDebugUtilsMessengerEXT GameRenderer::debugMessenger;
+
 const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
@@ -66,7 +90,7 @@ std::vector deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-bool QueueFamilyIndices::isComplete() { // Definition
+bool QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
@@ -81,7 +105,7 @@ void GameRenderer::initWindow() {
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    window = glfwCreateWindow(static_cast<int>(WIDTH), static_cast<int>(HEIGHT), "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
@@ -107,10 +131,24 @@ void GameRenderer::initVulkan() {
     createCommandPool();
     createDepthResources();
     createFramebuffers();
+
     vertexMemorySize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
     createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
     indexMemorySize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
     createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
+
+    createBuffer(vertexMemorySize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        vertexStagingBuffer,
+        vertexStagingBufferMemory);
+
+    createBuffer(indexMemorySize,
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    indexStagingBuffer,
+    indexStagingBufferMemory);
+
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);
     createDescriptorPool();
     createDescriptorSets();
@@ -170,14 +208,13 @@ void GameRenderer::drawFrame() {
 
     vkResetCommandBuffer(commandBuffers[currentFrame],  0);
 
-    if (sizeof(globalChunkVertices[0]) * globalChunkVertices.size() > vertexMemorySize) {
-        vertexMemorySize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
-        createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
-    }
+    resizeBufferCheck();
 
-    if (sizeof(globalChunkIndices[0]) * globalChunkIndices.size() > indexMemorySize) {
-        createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
-    }
+    updateBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory,
+        globalChunkVertices.data(), VertexPool::getOccupiedVertexRanges(), vertexMemorySize, sizeof(ChunkVertex));
+
+    updateBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory,
+        globalChunkIndices.data(), VertexPool::getOccupiedIndexRanges(), indexMemorySize, sizeof(globalChunkIndices[0]));
 
     printFPS();
 
@@ -235,20 +272,16 @@ void GameRenderer::cleanup() {
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);
 
-        vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-        vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+        destroyBuffer(uniformBuffers[i], uniformBuffersMemory[i]);
     }
 
     cleanupSwapChain();
 
-    vkDestroyBuffer(device, indexBuffer, nullptr);
-    vkFreeMemory(device, indexBufferMemory, nullptr);
-
-    vkDestroyBuffer(device, vertexBuffer, nullptr);
-    vkFreeMemory(device, vertexBufferMemory, nullptr);
-
-    vkDestroyBuffer(device, drawParamsBuffer, nullptr);
-    vkFreeMemory(device, drawParamsBufferMemory, nullptr);
+    destroyBuffer(indexBuffer, indexBufferMemory);
+    destroyBuffer(indexStagingBuffer, indexStagingBufferMemory);
+    destroyBuffer(vertexBuffer, vertexBufferMemory);
+    destroyBuffer(vertexStagingBuffer, vertexStagingBufferMemory);
+    destroyBuffer(drawParamsBuffer, drawParamsBufferMemory);
 
     TextRenderer::cleanup();
 
@@ -335,8 +368,7 @@ bool GameRenderer::checkValidationLayerSupport() {
 
 std::vector<const char *> GameRenderer::getRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
-    const char **glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
@@ -360,7 +392,7 @@ void GameRenderer::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateI
 }
 
 void GameRenderer::setupDebugMessenger() {
-    if (!enableValidationLayers) return;
+    if constexpr (!enableValidationLayers) return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -802,8 +834,8 @@ void GameRenderer::createGraphicsPipeline(VkPipelineLayout& pipelineLayout, VkPi
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) swapChainExtent.width;
-    viewport.height = (float) swapChainExtent.height;
+    viewport.width = static_cast<float>(swapChainExtent.width);
+    viewport.height = static_cast<float>(swapChainExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -1155,22 +1187,20 @@ void GameRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
-void GameRenderer::destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory) {
+void GameRenderer::destroyBuffer(const VkBuffer& buffer, const VkDeviceMemory& bufferMemory) {
     if (buffer != nullptr) {
         vkDeviceWaitIdle(device);
-        vkDestroyBuffer(device, buffer, nullptr);
         vkFreeMemory(device, bufferMemory, nullptr);
+        vkDestroyBuffer(device, buffer, nullptr);
     }
 }
 
-template void GameRenderer::createVertexBuffer<TexturedVertex>(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, uint32_t memorySize,
-    const std::vector<TexturedVertex>& vertices);
+template void GameRenderer::createVertexBuffer<TexturedVertex>(VkBuffer& vertexBuffer,
+    VkDeviceMemory& vertexBufferMemory, VkDeviceSize bufferSize, const std::vector<TexturedVertex>& vertices);
 
 template <typename VertexType>
-void GameRenderer::createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, uint32_t memorySize,
-    const std::vector<VertexType>& vertices) {
-    VkDeviceSize bufferSize = memorySize;
-
+void GameRenderer::createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory,
+    VkDeviceSize bufferSize, const std::vector<VertexType>& vertices) {
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1183,15 +1213,11 @@ void GameRenderer::createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& ve
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
     copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    destroyBuffer(stagingBuffer, stagingBufferMemory);
 }
 
-void GameRenderer::createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory, uint32_t memorySize,
+void GameRenderer::createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory, VkDeviceSize bufferSize,
     const std::vector<uint32_t>& indices) {
-    VkDeviceSize bufferSize = memorySize;
-
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1204,9 +1230,62 @@ void GameRenderer::createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& inde
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
     copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+    destroyBuffer(stagingBuffer, stagingBufferMemory);
+}
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+void GameRenderer::updateBuffer(const VkBuffer& buffer,
+    const VkBuffer& stagingBuffer, const VkDeviceMemory& stagingBufferMemory, void* newData,
+    std::vector<ChunkMemoryRange>& memoryRanges, const VkDeviceSize bufferSize, const uint32_t objectSize) {
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+
+    bool regionUpdateFound = false;
+    for (auto&[chunkID, startPos, endPos, offset, objectCount, savedToVBuffer] : memoryRanges) {
+        if (!savedToVBuffer) {
+            uint32_t memoryOffset = startPos * objectSize;
+            memcpy(static_cast<char*>(data) + memoryOffset,
+                static_cast<char*>(newData) + memoryOffset,
+                objectCount * objectSize);
+            regionUpdateFound = true;
+        }
+    }
+
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    if (!regionUpdateFound) {
+        return;
+    }
+
+    copyBufferRanges(stagingBuffer, buffer, memoryRanges, objectSize);
+}
+
+void GameRenderer::resizeBufferCheck() {
+    uint32_t verticesSize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
+    uint32_t indicesSize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
+
+    if (verticesSize > vertexMemorySize) {
+        vertexMemorySize = verticesSize;
+        destroyBuffer(vertexBuffer, vertexBufferMemory);
+        createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
+
+        destroyBuffer(vertexStagingBuffer, vertexStagingBufferMemory);
+        createBuffer(vertexMemorySize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        vertexStagingBuffer, vertexStagingBufferMemory);
+    }
+
+    if (indicesSize > indexMemorySize) {
+        indexMemorySize = indicesSize;
+        destroyBuffer(indexBuffer, indexBufferMemory);
+        createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
+
+        destroyBuffer(indexStagingBuffer, indexStagingBufferMemory);
+        createBuffer(indexMemorySize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        indexStagingBuffer, indexStagingBufferMemory);
+    }
 }
 
 bool GameRenderer::createDrawParamsBuffer() {
@@ -1217,7 +1296,11 @@ bool GameRenderer::createDrawParamsBuffer() {
     }
 
     if (bufferSize != drawParamsMemorySize) { //todo benchmark with fixed size buffers here
-        createBuffer(bufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, drawParamsBuffer, drawParamsBufferMemory);
+        destroyBuffer(drawParamsBuffer, drawParamsBufferMemory);
+        createBuffer(bufferSize,
+            VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            drawParamsBuffer, drawParamsBufferMemory);
         drawParamsMemorySize = bufferSize;
     }
 
@@ -1225,7 +1308,7 @@ bool GameRenderer::createDrawParamsBuffer() {
     vkMapMemory(device, drawParamsBufferMemory, 0, bufferSize, 0, &data);
 
     uint32_t commandIndex = 0;
-    for (auto&[chunkID, startPos, endPos, offset, objectCount] : VertexPool::getOccupiedIndexRanges()) {
+    for (auto&[chunkID, startPos, endPos, offset, objectCount, saved] : VertexPool::getOccupiedIndexRanges()) {
         VkDrawIndexedIndirectCommand command;
         command.indexCount = objectCount;
         command.instanceCount = 1;
@@ -1246,15 +1329,17 @@ bool GameRenderer::createDrawParamsBuffer() {
 
 void GameRenderer::createUniformBuffers(std::vector<VkBuffer>& uniformBuffers,
     std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped) {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
     uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
     uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
     uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+        constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+        createBuffer(bufferSize,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            uniformBuffers[i],
+            uniformBuffersMemory[i]);
         vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
     }
 }
@@ -1302,6 +1387,30 @@ void GameRenderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSi
     endSingleTimeCommands(commandBuffer);
 }
 
+void GameRenderer::copyBufferRanges(VkBuffer srcBuffer, VkBuffer dstBuffer, std::vector<ChunkMemoryRange>& memoryRanges,
+    uint32_t objectSize) {
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+    std::vector<VkBufferCopy> rangesToCopy;
+
+    for (auto&[chunkID, startPos, endPos, offset, objectCount, savedToVBuffer] : memoryRanges) {
+        if (!savedToVBuffer) {
+            VkBufferCopy copyRegion{};
+            uint32_t startByte = startPos * objectSize;
+            copyRegion.srcOffset = startByte;
+            copyRegion.dstOffset = startByte;
+            copyRegion.size = objectCount * objectSize;
+            savedToVBuffer = true;
+            rangesToCopy.push_back(copyRegion);
+            break;
+        }
+    }
+
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, rangesToCopy.size(), rangesToCopy.data());
+
+    endSingleTimeCommands(commandBuffer);
+}
+
 uint32_t GameRenderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -1322,7 +1431,7 @@ void GameRenderer::createCommandBuffers() {
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+    allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
@@ -1356,8 +1465,8 @@ void GameRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) swapChainExtent.width;
-    viewport.height = (float) swapChainExtent.height;
+    viewport.width = static_cast<float>(swapChainExtent.width);
+    viewport.height = static_cast<float>(swapChainExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -1416,7 +1525,8 @@ void GameRenderer::createSyncObjects() {
     }
 }
 
-void GameRenderer::copyBufferToImage(VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height) {
+void GameRenderer::copyBufferToImage(const VkBuffer& buffer, const VkImage& image,
+    const uint32_t width, const uint32_t height) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferImageCopy region{};
@@ -1441,7 +1551,8 @@ void GameRenderer::copyBufferToImage(VkBuffer& buffer, VkImage& image, uint32_t 
     endSingleTimeCommands(commandBuffer);
 }
 
-void GameRenderer::transitionImageLayout(VkImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void GameRenderer::transitionImageLayout(const VkImage& image, const VkImageLayout oldLayout,
+    const VkImageLayout newLayout) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkImageMemoryBarrier barrier{};
@@ -1489,7 +1600,7 @@ void GameRenderer::transitionImageLayout(VkImage& image, VkFormat format, VkImag
     endSingleTimeCommands(commandBuffer);
 }
 
-VkImageView GameRenderer::createTextureImageView(VkImage& textureImage) {
+VkImageView GameRenderer::createTextureImageView(const VkImage& textureImage) {
     return createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
@@ -1533,9 +1644,7 @@ VkDevice GameRenderer::getDevice() {
 }
 
 void GameRenderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto app = reinterpret_cast<GameRenderer*>(glfwGetWindowUserPointer(window));
-    app->framebufferResized = true;
-
+    framebufferResized = true;
 }
 
 std::vector<char> GameRenderer::readFile(const std::string &filename) {
@@ -1545,7 +1654,7 @@ std::vector<char> GameRenderer::readFile(const std::string &filename) {
         throw std::runtime_error("failed to open file!");
     }
 
-    size_t fileSize = (size_t) file.tellg();
+    const long long fileSize = file.tellg();
     std::vector<char> buffer(fileSize);
 
     file.seekg(0);
@@ -1569,8 +1678,8 @@ VkResult GameRenderer::CreateDebugUtilsMessengerEXT(VkInstance instance,
                                              const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
                                              const VkAllocationCallbacks *pAllocator,
                                              VkDebugUtilsMessengerEXT *pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
-        instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance,
+        "vkCreateDebugUtilsMessengerEXT"));
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
@@ -1580,8 +1689,10 @@ VkResult GameRenderer::CreateDebugUtilsMessengerEXT(VkInstance instance,
 
 void GameRenderer::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                           const VkAllocationCallbacks *pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
-        instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")
+        );
+
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
     }

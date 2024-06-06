@@ -232,9 +232,7 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
 }
 
 void ChunkManager::meshAllChunks() {
-    for (auto& chunkPair : chunks) {
-        Chunk* chunk = chunkPair.second;
-
+    for (auto& [pos, chunk] : chunks) {
         if (chunk->geometryModified) {
             meshChunk(*chunk);
             //todo remove chunk->geometryModified = false;
