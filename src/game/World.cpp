@@ -47,8 +47,8 @@ void World::init() {
     }
 
     range = 0;
-    for (int x = -range; x <= range; ++x) {
-        for (int z = -range; z <= range; ++z) {
+    for (int x = -range; x < range; ++x) {
+        for (int z = -range; z < range; ++z) {
             float height = 0.5f + (rand() % 100) / 100.0f;
             height += 0.2f * (x / 10.0f) + 0.2f * (z / 10.0f);
 
@@ -63,11 +63,11 @@ void World::init() {
 static int counter = 0;
 
 void World::mainLoop() {
-    return;
     counter++;
-    if (counter % 100 == 0) {
+
+    if (counter % 10 == 0) {
         glm::vec3 blockPos = {
-            counter/100,
+            counter/10,
             2,
             0
         };
