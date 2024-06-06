@@ -52,6 +52,8 @@ add_executable(vulkan_voxel
         src/rendering/VertexPool.h
         src/rendering/TextRenderer.cpp
         src/rendering/TextRenderer.h
+        src/utility/TextUtil.cpp
+        src/utility/TextUtil.h
 )
 
 target_link_libraries(vulkan_voxel
