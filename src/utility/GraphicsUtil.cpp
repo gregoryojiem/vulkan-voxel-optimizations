@@ -9,7 +9,12 @@ void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<boo
     };
 
     for (const auto& pos : positions) {
-        chunkVertices.push_back({pos + block->position, block->color});
+        ChunkVertex newVertex = {
+            pos + block->position,
+            block->color[0],
+            block->color[1],
+            block->color[2]};
+        chunkVertices.push_back(newVertex);
     }
 }
 

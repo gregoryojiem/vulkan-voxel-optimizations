@@ -10,9 +10,9 @@
 
 World::World() : seed(2) { }
 
-static Block greenBlock = {glm::vec3(0.0f, 0.0f, 0.0f), Block::rgbToVec3(0, 150, 0)};
-static Block pinkBlock = {glm::vec3(2.0f, 0.0f, 0.0f), Block::rgbToVec3(255, 174, 201)};
-static Block yellowBlock = {glm::vec3(1.0f, 1.0f, 0.0f), Block::rgbToVec3(255, 255, 0)};
+static Block greenBlock = {glm::vec3(0.0f, 0.0f, 0.0f), 0, 150, 0};
+static Block pinkBlock = {glm::vec3(2.0f, 0.0f, 0.0f), 255, 174, 201};
+static Block yellowBlock = {glm::vec3(1.0f, 3.0f, 0.0f), 255, 255, 0};
 
 void World::generateNoisyTerrain(int range) {
     for (int x = -range; x < range; ++x) {
@@ -34,12 +34,12 @@ void World::generateTerrainFromNoise(int range) {
         for (int z = -range; z < range; z++)
         {
             float noiseInfo = noise.GetNoise((float)x, (float)z);
-            greenBlock.position = {x, (int)(noiseInfo*15), z};
+            greenBlock.position = {x, (int)(noiseInfo), z};
             int test = 50+(int)(noiseInfo*200);
             if (test < 0) {
                 test = 0;
             }
-            greenBlock.color = Block::rgbToVec3(test, (int)(noiseInfo*100) + 150, test);
+            Block::setColor(greenBlock, test, (int)(noiseInfo*100) + 150, test);
             addBlock(greenBlock);
         }
     }
@@ -47,7 +47,8 @@ void World::generateTerrainFromNoise(int range) {
 
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    //addBlock(yellowBlock);
+    addBlock(yellowBlock);
+    //chunkManager.fillChunk(yellowBlock.position, yellowBlock);
 
     int range = 2000;
     int numBlocks = range * range;
