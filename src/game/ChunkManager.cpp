@@ -122,10 +122,10 @@ void ChunkManager::generateBlockMesh(Chunk& chunk, Block* block, std::array<bool
     if (hasBlock(block->position + glm::vec3(0, 0, -1))) {
         facesToDraw[3] = false;
     }
-    if (hasBlock(block->position + glm::vec3(1, 0, 0))) {
+    if (hasBlock(block->position + glm::vec3(-1, 0, 0))) {
         facesToDraw[4] = false;
     }
-    if (hasBlock(block->position + glm::vec3(-1, 0, 0))) {
+    if (hasBlock(block->position + glm::vec3(1, 0, 0))) {
         facesToDraw[5] = false;
     }
 
