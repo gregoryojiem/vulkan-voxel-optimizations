@@ -8,6 +8,7 @@
 #include <optional>
 
 #include "VertexPool.h"
+#include "VulkanDebugger.h"
 #include "camera/Camera.h"
 
 extern uint32_t WIDTH;
@@ -90,7 +91,7 @@ public:
 
 private:
     static VkInstance instance;
-    static VkDebugUtilsMessengerEXT debugMessenger;
+    static VulkanDebugger debugger;
     static VkSurfaceKHR surface;
 
     static VkPhysicalDevice physicalDevice;
@@ -150,16 +151,6 @@ private:
     void initWindow();
 
     static void initVulkan();
-
-    static void createInstance();
-
-    static bool checkValidationLayerSupport();
-
-    static std::vector<const char*> getRequiredExtensions();
-
-    static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-
-    static void setupDebugMessenger();
 
     static void createSurface();
 
@@ -224,20 +215,6 @@ private:
     static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
-
-    static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
-                                                 const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                                 const VkAllocationCallbacks* pAllocator,
-                                                 VkDebugUtilsMessengerEXT* pDebugMessenger);
-
-    static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                              const VkAllocationCallbacks* pAllocator);
 };
 
 #endif //GAMERENDERER_H

@@ -47,6 +47,10 @@ add_executable(vulkan_voxel
         src/rendering/TextRenderer.h
         src/utility/TextUtil.cpp
         src/utility/TextUtil.h
+        src/rendering/VulkanUtil.cpp
+        src/rendering/VulkanUtil.h
+        src/rendering/VulkanDebugger.cpp
+        src/rendering/VulkanDebugger.h
 )
 
 target_link_libraries(vulkan_voxel
