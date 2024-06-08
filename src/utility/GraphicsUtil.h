@@ -7,7 +7,7 @@
 #include "../rendering/Vertex.h"
 #include "../game/Block.h"
 
-extern void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<bool, 6>& facesToDraw, Block* block);
+extern void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<bool, 6>& facesToDraw, Block& block);
 
 extern void insertBlockIndices(std::vector<uint32_t>& chunkIndices, std::array<bool, 6>& facesToDraw, uint32_t startIndex);
 

@@ -2,7 +2,7 @@
 
 #include "../rendering/Vertex.h"
 
-void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<bool, 6>& facesToDraw, Block* block) {
+void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<bool, 6>& facesToDraw, Block& block) {
     const std::array<glm::vec3, 8> positions = {
         {{0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f},
             {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}}
@@ -10,10 +10,10 @@ void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<boo
 
     for (const auto& pos : positions) {
         ChunkVertex newVertex = {
-            pos + block->position,
-            block->color[0],
-            block->color[1],
-            block->color[2]};
+            pos + block.position,
+            block.color[0],
+            block.color[1],
+            block.color[2]};
         chunkVertices.push_back(newVertex);
     }
 }
