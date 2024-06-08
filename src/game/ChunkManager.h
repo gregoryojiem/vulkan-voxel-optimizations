@@ -18,10 +18,8 @@ struct OctreeNode {
     OctreeNode* children[8] = {nullptr};
     Block* block;
 
-    OctreeNode();
-    ~OctreeNode();
-
     explicit OctreeNode(const glm::vec3& position);
+    ~OctreeNode();
 };
 
 struct Chunk {
@@ -31,39 +29,31 @@ struct Chunk {
     bool geometryModified;
     uint32_t ID;
 
-    explicit Chunk(const glm::vec3& pos);
-    ~Chunk();
-
     static glm::vec3 alignToChunkPos(const glm::vec3& position);
     static double alignNum(double number);
 };
 
 // hash function for vec3s so they can be used in the unordered map of ChunkManager
-namespace std {
-    template<>
-    struct hash<glm::vec3> {
-        std::size_t operator()(const glm::vec3& v) const {
-            return std::hash<float>()(v.x) ^
-                   std::hash<float>()(v.y) ^
-                   std::hash<float>()(v.z);
-        }
-    };
-}
+template<>
+struct std::hash<glm::vec3> {
+    std::size_t operator()(const glm::vec3& v) const noexcept {
+        return std::hash<float>()(v.x) ^
+               std::hash<float>()(v.y) ^
+               std::hash<float>()(v.z);
+    }
+};
 
 class ChunkManager {
 public:
-    static std::unordered_map<glm::vec3, Chunk*> chunks;
+    std::unordered_map<glm::vec3, Chunk> chunks;
     static uint32_t currentID;
-
-    ChunkManager();
-    ~ChunkManager();
 
     Chunk* getChunk(const glm::vec3& worldPos);
     void createChunk(const glm::vec3& worldPos);
     void fillChunk(const glm::vec3& worldPos, Block block);
     void meshChunk(Chunk& chunk);
     void meshAllChunks();
-    size_t chunkCount();
+    size_t chunkCount() const;
 
     void addBlock(const Block& block);
     Block* getBlock(const glm::vec3& worldPos);

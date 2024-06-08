@@ -9,38 +9,20 @@
 #include "../utility/TimeManager.h"
 #include "../rendering/Vertex.h"
 
-std::unordered_map<glm::vec3, Chunk*> ChunkManager::chunks;
 uint32_t ChunkManager::currentID = 1;
 
-OctreeNode::OctreeNode() {
-    for (int i = 0; i < 8; ++i) {
-        children[i] = nullptr;
-    }
-    block = nullptr;
-}
-
 OctreeNode::OctreeNode(const glm::vec3& position) {
-    for (int i = 0; i < 8; ++i) {
-        children[i] = nullptr;
+    for (auto & i : children) {
+        i = nullptr;
     }
     block = new Block(position);
 }
 
 OctreeNode::~OctreeNode() {
-    for (int i = 0; i < 8; ++i) {
-        delete children[i];
+    for (auto & i : children) {
+        delete i;
     }
     delete block;
-}
-
-Chunk::Chunk(const glm::vec3& pos) {
-    octree = new OctreeNode(pos);
-    geometryModified = false;
-    ID = ChunkManager::currentID++;
-}
-
-Chunk::~Chunk() {
-    delete octree;
 }
 
 glm::vec3 Chunk::alignToChunkPos(const glm::vec3& position) {
@@ -51,18 +33,10 @@ double Chunk::alignNum(double number) {
     return round((number - chunkShift) / 8) * 8 + chunkShift;
 }
 
-ChunkManager::ChunkManager() = default;
-
-ChunkManager::~ChunkManager() {
-    for (auto& pair : chunks) {
-        delete pair.second;
-    }
-}
-
 Chunk* ChunkManager::getChunk(const glm::vec3& worldPos) {
     auto it = chunks.find(Chunk::alignToChunkPos(worldPos));
     if (it != chunks.end()) {
-        return it->second;
+        return &it->second;
     }
     return nullptr;
 }
@@ -76,18 +50,21 @@ void ChunkManager::createChunk(const glm::vec3& worldPos) {
         throw std::runtime_error("chunk creation error: location invalid!");
     }
 
-    if (chunks.find(worldPos) != chunks.end()) {
+    if (chunks.contains(worldPos)) {
         throw std::runtime_error("chunk creation error: chunk already exists!");
     }
 
-    auto newChunk = new Chunk(worldPos);
+    Chunk newChunk;
+    newChunk.octree = new OctreeNode(worldPos);
+    newChunk.geometryModified = false;
+    newChunk.ID = currentID++;
     chunks[worldPos] = newChunk;
 }
 
 void ChunkManager::meshChunk(Chunk& chunk) {
     chunk.vertices = { };
     chunk.indices = { };
-    std::array<bool, 6> facesToDraw;
+    std::array<bool, 6> facesToDraw{};
 
     for (auto& topNode : chunk.octree->children) {
         if (topNode == nullptr) {
@@ -161,17 +138,17 @@ void ChunkManager::addBlock(const Block& block) {
         if (block.position.z >= currentNode->block->position.z) childIndex |= 4;
 
         if (currentNode->children[childIndex] == nullptr) {
-            currentNode->children[childIndex] = new OctreeNode();
             glm::vec3 childPos = currentNode->block->position;
 
-            const int xSign = childIndex & 1 ? 1 : -1;
-            const int ySign = childIndex & 2 ? 1 : -1;
-            const int zSign = childIndex & 4 ? 1 : -1;
+            const float xSign = childIndex & 1 ? 1 : -1;
+            const float ySign = childIndex & 2 ? 1 : -1;
+            const float zSign = childIndex & 4 ? 1 : -1;
 
-            childPos.x += subIncrements[depth] * xSign;
+            childPos.x += xSign * subIncrements[depth];
             childPos.y += subIncrements[depth] * ySign;
             childPos.z += subIncrements[depth] * zSign;
-            currentNode->children[childIndex]->block = new Block(childPos);
+
+            currentNode->children[childIndex] = new OctreeNode(childPos);
         }
 
         currentNode = currentNode->children[childIndex];
@@ -264,20 +241,20 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
 
 void ChunkManager::meshAllChunks() {
     for (auto& [pos, chunk] : chunks) {
-        if (chunk->geometryModified) {
+        if (chunk.geometryModified) {
             TimeManager::startTimer("meshChunk");
-            meshChunk(*chunk);
+            meshChunk(chunk);
             TimeManager::addTimeToProfiler("meshChunk", TimeManager::finishTimer("meshChunk"));
-            
+
             TimeManager::startTimer("addToVertexPool");
-            if (!chunk->vertices.empty()) {
-                VertexPool::addToVertexPool(*chunk);
+            if (!chunk.vertices.empty()) {
+                VertexPool::addToVertexPool(chunk);
             }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
         }
     }
 }
 
-size_t ChunkManager::chunkCount() {
+size_t ChunkManager::chunkCount() const {
     return chunks.size();
 }
