@@ -22,7 +22,7 @@ private:
     uint32_t seed;
 
     void generateNoisyTerrain(int range);
-    void generateTerrainFromNoise(int range);
+    uint32_t generateTerrainFromNoise(int range);
 };
 
 

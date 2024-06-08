@@ -27,22 +27,34 @@ void World::generateNoisyTerrain(int range) {
     }
 }
 
-void World::generateTerrainFromNoise(int range) {
-    range = range/2;
-    for (int x = -range; x < range; x++)
-    {
-        for (int z = -range; z < range; z++)
-        {
-            float noiseInfo = noise.GetNoise((float)x, (float)z);
-            greenBlock.position = {x, (int)(noiseInfo), z};
-            int test = 50+(int)(noiseInfo*200);
-            if (test < 0) {
-                test = 0;
+uint32_t World::generateTerrainFromNoise(int range) {
+    const int halfRange = range / 2;
+    Block terrainBlock = greenBlock;
+    uint32_t blocksGenerated = 0;
+
+    for (int x = -halfRange; x < halfRange; x++) {
+        for (int z = -halfRange; z < halfRange; z++) {
+            float noiseInfo = noise.GetNoise(static_cast<float>(x), static_cast<float>(z));
+            noiseInfo = (noiseInfo + 1) / 2;
+
+            const int height = static_cast<int>(noiseInfo * 10);
+
+            for (int y = -1; y < height; y++) {
+                int redBlueColor = (y * 4) / 8 * 8;
+                int greenColor = (y * 4 + 50) / 8 * 8;
+                redBlueColor = std::clamp(redBlueColor, 0, 255);
+                greenColor = std::clamp(greenColor, 0, 255);
+
+                terrainBlock.position = {x, y, z};
+                Block::setColor(terrainBlock, redBlueColor, greenColor, redBlueColor);
+
+                addBlock(terrainBlock);
+                blocksGenerated++;
             }
-            Block::setColor(greenBlock, test, (int)(noiseInfo*100) + 150, test);
-            addBlock(greenBlock);
         }
     }
+
+    return blocksGenerated;
 }
 
 void World::init() {
@@ -50,13 +62,14 @@ void World::init() {
     addBlock(yellowBlock);
     //chunkManager.fillChunk(yellowBlock.position, yellowBlock);
 
-    int range = 2000;
-    int numBlocks = range * range;
-    std::cout << "Started generating terrain! There are " << TextUtil::getCommaString(numBlocks) << " voxels!\n";
+    const int range = 100;
+    std::cout << "Started generating terrain! ";
 
     TimeManager::startTimer("generateTerrain");
-    generateTerrainFromNoise(range);
+    const uint32_t numBlocksGenerated = generateTerrainFromNoise(range);
     TimeManager::addTimeToProfiler("generateTerrain", TimeManager::finishTimer("generateTerrain"));
+
+    std::cout << "There were " << TextUtil::getCommaString(numBlocksGenerated) << " voxels!\n";
 
     std::cout << "Started meshing!\n";
 
