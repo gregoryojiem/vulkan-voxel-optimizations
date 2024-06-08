@@ -17,7 +17,6 @@ public:
 
 private:
     ChunkManager chunkManager;
-    std::vector<Block> worldBlocks;
     FastNoiseLite noise;
     uint32_t seed;
 

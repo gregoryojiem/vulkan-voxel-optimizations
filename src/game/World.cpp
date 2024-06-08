@@ -37,9 +37,9 @@ uint32_t World::generateTerrainFromNoise(int range) {
             float noiseInfo = noise.GetNoise(static_cast<float>(x), static_cast<float>(z));
             noiseInfo = (noiseInfo + 1) / 2;
 
-            const int height = static_cast<int>(noiseInfo * 10);
+            const int height = static_cast<int>(noiseInfo*15);
 
-            for (int y = -1; y < height; y++) {
+            for (int y = height; y <= height; y++) {
                 int redBlueColor = (y * 4) / 8 * 8;
                 int greenColor = (y * 4 + 50) / 8 * 8;
                 redBlueColor = std::clamp(redBlueColor, 0, 255);
@@ -59,17 +59,18 @@ uint32_t World::generateTerrainFromNoise(int range) {
 
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    addBlock(yellowBlock);
+    //addBlock(yellowBlock);
     //chunkManager.fillChunk(yellowBlock.position, yellowBlock);
 
-    const int range = 100;
+    const int range = 1000;
     std::cout << "Started generating terrain! ";
 
     TimeManager::startTimer("generateTerrain");
     const uint32_t numBlocksGenerated = generateTerrainFromNoise(range);
     TimeManager::addTimeToProfiler("generateTerrain", TimeManager::finishTimer("generateTerrain"));
 
-    std::cout << "There were " << TextUtil::getCommaString(numBlocksGenerated) << " voxels!\n";
+    std::cout << "There were " << TextUtil::getCommaString(numBlocksGenerated) << " voxels and " <<
+           TextUtil::getCommaString( chunkManager.chunkCount()) << " chunks!\n";
 
     std::cout << "Started meshing!\n";
 
@@ -85,10 +86,5 @@ void World::mainLoop() {
 }
 
 void World::addBlock(const Block block) {
-    worldBlocks.push_back(block);
     chunkManager.addBlock(block);
-}
-
-const std::vector<Block> &World::getBlocks() const {
-    return worldBlocks;
 }
