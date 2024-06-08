@@ -21,7 +21,8 @@ protected:
 
 class TextUtil {
 public:
-    static std::string getCommaString(int num);
+    template <typename T>
+    static std::string getCommaString(const T& num);
 };
 
 
