@@ -11,6 +11,7 @@ std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
 std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedIndexRanges;
 std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES_SIZE, CHUNK_VERTICES_SIZE}};
 std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, CHUNK_INDICES_SIZE, CHUNK_INDICES_SIZE}};
+bool VertexPool::newUpdate;
 
 void VertexPool::addToVertexPool(const Chunk& chunk) {
     ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunk,
@@ -21,6 +22,8 @@ void VertexPool::addToVertexPool(const Chunk& chunk) {
 
     std::copy(chunk.vertices.begin(), chunk.vertices.end(), globalChunkVertices.begin() + vertexRangeToUse.startPos);
     std::copy(chunk.indices.begin(), chunk.indices.end(), globalChunkIndices.begin() + indexRangeToUse.startPos);
+
+    newUpdate = true;
 }
 
 std::unordered_map<uint32_t, ChunkMemoryRange>& VertexPool::getOccupiedVertexRanges() {

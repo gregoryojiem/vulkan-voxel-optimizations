@@ -25,6 +25,8 @@ struct ChunkMemoryRange{
 
 class VertexPool {
 public:
+    static bool newUpdate;
+
     static void addToVertexPool(const Chunk& chunk);
     static std::unordered_map<uint32_t, ChunkMemoryRange>& getOccupiedVertexRanges();
     static std::unordered_map<uint32_t, ChunkMemoryRange>& getOccupiedIndexRanges();

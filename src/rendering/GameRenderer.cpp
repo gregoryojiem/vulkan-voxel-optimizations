@@ -210,11 +210,15 @@ void GameRenderer::drawFrame() {
 
     resizeBufferCheck();
 
-    updateBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory,
-        globalChunkVertices.data(), VertexPool::getOccupiedVertexRanges(), vertexMemorySize, sizeof(ChunkVertex));
+    if (VertexPool::newUpdate) {
+        updateBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory,
+            globalChunkVertices.data(), VertexPool::getOccupiedVertexRanges(), vertexMemorySize, sizeof(ChunkVertex));
 
-    updateBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory,
-        globalChunkIndices.data(), VertexPool::getOccupiedIndexRanges(), indexMemorySize, sizeof(globalChunkIndices[0]));
+        updateBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory,
+            globalChunkIndices.data(), VertexPool::getOccupiedIndexRanges(), indexMemorySize, sizeof(globalChunkIndices[0]));
+
+        VertexPool::newUpdate = false;
+    }
 
     printFPS();
 
