@@ -15,11 +15,16 @@ static float chunkShift = 3.5;
 static int maxDepth = 3;
 
 struct OctreeNode {
-    OctreeNode* children[8] = {nullptr};
-    Block* block;
+    Block block{};
 
-    explicit OctreeNode(const glm::vec3& position);
-    ~OctreeNode();
+    virtual ~OctreeNode();
+};
+
+struct InternalNode final : OctreeNode {
+    OctreeNode* children[8] = {nullptr};
+
+    explicit InternalNode(const glm::vec3& position);
+    ~InternalNode() override;
 };
 
 struct Chunk {
@@ -29,8 +34,12 @@ struct Chunk {
     bool geometryModified;
     uint32_t ID;
 
+    ~Chunk();
+
     static glm::vec3 alignToChunkPos(const glm::vec3& position);
     static double alignNum(double number);
+    static int getOctantIndex(const glm::vec3& blockPos, const glm::vec3& chunkPos);
+    static void addOctantOffset(glm::vec3& middlePosition, int octantIndex, int depth);
 };
 
 // hash function for vec3s so they can be used in the unordered map of ChunkManager
@@ -53,13 +62,14 @@ public:
     void fillChunk(const glm::vec3& worldPos, Block block);
     void meshChunk(Chunk& chunk);
     void meshAllChunks();
-    size_t chunkCount() const;
+    uint32_t chunkCount() const;
 
     void addBlock(const Block& block);
-    Block* getBlock(const glm::vec3& worldPos);
+    OctreeNode* createPathToBlock(const Chunk* chunk, const Block& block);
+    Block getBlock(const glm::vec3& worldPos);
     bool hasBlock(const glm::vec3& worldPos);
     void removeBlock(const glm::vec3& worldPos);
-    void generateBlockMesh(Chunk& chunk, Block* block, std::array<bool, 6>& facesToDraw);
+    void generateBlockMesh(Chunk& chunk, Block& block, std::array<bool, 6>& facesToDraw);
 
 private:
     OctreeNode* findOctreeNode(const glm::vec3& worldPos);
