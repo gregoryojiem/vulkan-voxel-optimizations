@@ -13,9 +13,9 @@ layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec3 bary;
 
 void main() {
-    float r = (packedColorInfo & 0xFF) / 255.0;
-    float g = ((packedColorInfo >> 8) & 0xFF) / 255.0;
-    float b = ((packedColorInfo >> 16) & 0xFF) / 255.0;
+    float r = (packedColorInfo & 255) / 255.0;
+    float g = ((packedColorInfo >> 8) & 255) / 255.0;
+    float b = ((packedColorInfo >> 16) & 255) / 255.0;
     fragColor = vec3(r, g, b);
 
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
