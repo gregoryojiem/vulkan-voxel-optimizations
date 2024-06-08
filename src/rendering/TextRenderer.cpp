@@ -18,7 +18,7 @@ std::vector<uint32_t> TextRenderer::textQuadIndices;
 
 std::vector<ScreenText> TextRenderer::activeText;
 std::map<char, Character> TextRenderer::characters;
-const std::string TextRenderer::fontPath = "resources/fonts";
+const std::string TextRenderer::fontPath = "../resources/fonts";
 const std::string TextRenderer::fontToUse = "abel";
 
 VkBuffer TextRenderer::textVertexBuffer;
@@ -59,8 +59,8 @@ void TextRenderer::init() {
     GameRenderer::createUniformBuffers(textUniformBuffers, textUniformBuffersMemory, textUniformBuffersMapped);
     descriptorInit();
 
-    const std::vector<char> vertShaderCode = GameRenderer::readFile("src/rendering/shaders/text_vert.spv");
-    const std::vector<char> fragShaderCode = GameRenderer::readFile("src/rendering/shaders/text_frag.spv");
+    const std::vector<char> vertShaderCode = GameRenderer::readFile("../src/rendering/shaders/text_vert.spv");
+    const std::vector<char> fragShaderCode = GameRenderer::readFile("../src/rendering/shaders/text_frag.spv");
     GameRenderer::createGraphicsPipeline(
         pipelineLayout, textGraphicsPipeline,
         vertShaderCode, fragShaderCode,

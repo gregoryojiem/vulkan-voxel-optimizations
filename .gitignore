@@ -1,5 +1,7 @@
 .idea
 cmake-build-debug
+cmake-build-release
+cmake-build-valgrind-debug
 
 .vs
 vulkan-voxel.sln

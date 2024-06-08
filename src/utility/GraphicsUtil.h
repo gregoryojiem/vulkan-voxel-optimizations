@@ -1,13 +1,15 @@
 #ifndef GRAPHICSUTIL_H
 #define GRAPHICSUTIL_H
 
+#include <array>
 #include <vector>
 
 #include "../rendering/Vertex.h"
+#include "../game/Block.h"
 
-extern std::vector<ChunkVertex> generateBlockVertices(Block block);
+extern void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<bool, 6>& facesToDraw, Block& block);
 
-extern std::vector<uint32_t> generateBlockIndices(uint32_t startIndex);
+extern void insertBlockIndices(std::vector<uint32_t>& chunkIndices, std::array<bool, 6>& facesToDraw, uint32_t startIndex);
 
 extern std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4 texQuadBounds,
     glm::vec2 startPos, float scale);

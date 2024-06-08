@@ -1,7 +1,6 @@
 #ifndef INPUTHANDLER_H
 #define INPUTHANDLER_H
 
-#include <windows.h>
 #include <../../../dependencies/glfw-3.4.bin.WIN64/include/GLFW/glfw3.h>
 
 struct InputState {

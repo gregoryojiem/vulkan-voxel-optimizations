@@ -9,7 +9,7 @@
 
 struct ChunkVertex {
     glm::vec3 pos;
-    glm::vec3 color;
+    uint8_t color[4];
 
     static VkVertexInputBindingDescription getBindingDescription();
     static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();

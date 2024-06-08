@@ -2,46 +2,37 @@
 
 #include "../rendering/Vertex.h"
 
-std::vector<ChunkVertex> generateBlockVertices(Block block) {
-    return {
-        {{0.5f + block.position.x, 0.5f + block.position.y, 0.5f + block.position.z}, block.color},
-        {{-0.5f + block.position.x, 0.5f + block.position.y, 0.5f + block.position.z}, block.color},
-        {{0.5f + block.position.x, 0.5f + block.position.y, -0.5f + block.position.z}, block.color},
-        {{-0.5f + block.position.x, 0.5f + block.position.y, -0.5f + block.position.z}, block.color},
-
-        {{0.5f + block.position.x, -0.5f + block.position.y, 0.5f + block.position.z}, block.color},
-        {{-0.5f + block.position.x, -0.5f + block.position.y, 0.5f + block.position.z}, block.color},
-        {{0.5f + block.position.x, -0.5f + block.position.y, -0.5f + block.position.z}, block.color},
-        {{-0.5f + block.position.x, -0.5f + block.position.y, -0.5f + block.position.z}, block.color},
+void insertBlockVertices(std::vector<ChunkVertex>& chunkVertices, std::array<bool, 6>& facesToDraw, Block& block) {
+    const std::array<glm::vec3, 8> positions = {
+        {{0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f},
+            {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}}
     };
+
+    for (const auto& pos : positions) {
+        ChunkVertex newVertex = {
+            pos + block.position,
+            block.color[0],
+            block.color[1],
+            block.color[2]};
+        chunkVertices.push_back(newVertex);
+    }
 }
 
-std::vector<uint32_t> generateBlockIndices(uint32_t startIndex) {
-    return {
-        //top face (facing (0, -1, 0))
-        startIndex + 0, startIndex + 2, startIndex + 1,
-        startIndex + 3, startIndex + 1, startIndex + 2,
-
-        //bottom face
-        startIndex + 7, startIndex + 6, startIndex + 5,
-        startIndex + 4, startIndex + 5, startIndex + 6,
-
-        //front face (facing (0, 0, -1))
-        startIndex + 1, startIndex + 5, startIndex + 0,
-        startIndex + 4, startIndex + 0, startIndex + 5,
-
-        //back face
-        startIndex + 3, startIndex + 2, startIndex + 7,
-        startIndex + 6, startIndex + 7, startIndex + 2,
-
-        //left face (facing (-1, 0, 0))
-        startIndex + 7, startIndex + 5, startIndex + 3,
-        startIndex + 1, startIndex + 3, startIndex + 5,
-
-        //right face
-        startIndex + 0, startIndex + 4, startIndex + 2,
-        startIndex + 6, startIndex + 2, startIndex + 4
+void insertBlockIndices(std::vector<uint32_t>& chunkIndices, std::array<bool, 6>& facesToDraw, uint32_t startIndex) {
+    const std::array<uint32_t, 6> newIndices[6] = {
+        { startIndex + 0, startIndex + 2, startIndex + 1, startIndex + 3, startIndex + 1, startIndex + 2 }, // top
+        { startIndex + 7, startIndex + 6, startIndex + 5, startIndex + 4, startIndex + 5, startIndex + 6 }, // bottom
+        { startIndex + 1, startIndex + 5, startIndex + 0, startIndex + 4, startIndex + 0, startIndex + 5 }, // front
+        { startIndex + 3, startIndex + 2, startIndex + 7, startIndex + 6, startIndex + 7, startIndex + 2 }, // back
+        { startIndex + 7, startIndex + 5, startIndex + 3, startIndex + 1, startIndex + 3, startIndex + 5 }, // left
+        { startIndex + 0, startIndex + 4, startIndex + 2, startIndex + 6, startIndex + 2, startIndex + 4 }  // right
     };
+
+    for (size_t i = 0; i < 6; i++) {
+        if (facesToDraw[i]) {
+            chunkIndices.insert(chunkIndices.end(), newIndices[i].begin(), newIndices[i].end());
+        }
+    }
 }
 
 std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4 texQuadBounds,

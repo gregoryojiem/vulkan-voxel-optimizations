@@ -122,8 +122,8 @@ void GameRenderer::initVulkan() {
     createDescriptorSetLayout(descriptorSetLayout, false);
     createGraphicsPipeline(
         pipelineLayout, graphicsPipeline,
-        readFile("src/rendering/shaders/vert.spv"),
-        readFile("src/rendering/shaders/frag.spv"),
+        readFile("../src/rendering/shaders/vert.spv"),
+        readFile("../src/rendering/shaders/frag.spv"),
         ChunkVertex::getBindingDescription(),
         ChunkVertex::getAttributeDescriptions(),
         descriptorSetLayout,
@@ -210,11 +210,15 @@ void GameRenderer::drawFrame() {
 
     resizeBufferCheck();
 
-    updateBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory,
-        globalChunkVertices.data(), VertexPool::getOccupiedVertexRanges(), vertexMemorySize, sizeof(ChunkVertex));
+    if (VertexPool::newUpdate) {
+        updateBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory,
+            globalChunkVertices.data(), VertexPool::getOccupiedVertexRanges(), vertexMemorySize, sizeof(ChunkVertex));
 
-    updateBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory,
-        globalChunkIndices.data(), VertexPool::getOccupiedIndexRanges(), indexMemorySize, sizeof(globalChunkIndices[0]));
+        updateBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory,
+            globalChunkIndices.data(), VertexPool::getOccupiedIndexRanges(), indexMemorySize, sizeof(globalChunkIndices[0]));
+
+        VertexPool::newUpdate = false;
+    }
 
     printFPS();
 
@@ -764,8 +768,7 @@ void GameRenderer::createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSe
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &uboLayoutBinding;
+    std::vector bindings = {uboLayoutBinding};
 
     if (includeSamplerDescriptor) {
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
@@ -775,10 +778,11 @@ void GameRenderer::createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSe
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array bindings = {uboLayoutBinding, samplerLayoutBinding};
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
+        bindings.push_back(samplerLayoutBinding);
     }
+
+    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    layoutInfo.pBindings = bindings.data();
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
@@ -1235,17 +1239,17 @@ void GameRenderer::createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& inde
 
 void GameRenderer::updateBuffer(const VkBuffer& buffer,
     const VkBuffer& stagingBuffer, const VkDeviceMemory& stagingBufferMemory, void* newData,
-    std::vector<ChunkMemoryRange>& memoryRanges, const VkDeviceSize bufferSize, const uint32_t objectSize) {
+    std::unordered_map<uint32_t, ChunkMemoryRange>& memoryRanges, const VkDeviceSize bufferSize, const uint32_t objectSize) {
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
 
     bool regionUpdateFound = false;
-    for (auto&[chunkID, startPos, endPos, offset, objectCount, savedToVBuffer] : memoryRanges) {
-        if (!savedToVBuffer) {
-            uint32_t memoryOffset = startPos * objectSize;
+    for (auto& [chunkID, memoryRange] : memoryRanges) {
+        if (!memoryRange.savedToVBuffer) {
+            const uint32_t memoryOffset = memoryRange.startPos * objectSize;
             memcpy(static_cast<char*>(data) + memoryOffset,
                 static_cast<char*>(newData) + memoryOffset,
-                objectCount * objectSize);
+                memoryRange.objectCount * objectSize);
             regionUpdateFound = true;
         }
     }
@@ -1308,12 +1312,12 @@ bool GameRenderer::createDrawParamsBuffer() {
     vkMapMemory(device, drawParamsBufferMemory, 0, bufferSize, 0, &data);
 
     uint32_t commandIndex = 0;
-    for (auto&[chunkID, startPos, endPos, offset, objectCount, saved] : VertexPool::getOccupiedIndexRanges()) {
+    for (auto& [chunkID, memoryRange] : VertexPool::getOccupiedIndexRanges()) {
         VkDrawIndexedIndirectCommand command;
-        command.indexCount = objectCount;
+        command.indexCount = memoryRange.objectCount;
         command.instanceCount = 1;
-        command.firstIndex = startPos;
-        command.vertexOffset = static_cast<int32_t>(offset);
+        command.firstIndex = memoryRange.startPos;
+        command.vertexOffset = static_cast<int32_t>(memoryRange.offset);
         command.firstInstance = 0;
 
         memcpy(static_cast<char*>(data) + commandIndex * sizeof(VkDrawIndexedIndirectCommand),
@@ -1387,20 +1391,20 @@ void GameRenderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSi
     endSingleTimeCommands(commandBuffer);
 }
 
-void GameRenderer::copyBufferRanges(VkBuffer srcBuffer, VkBuffer dstBuffer, std::vector<ChunkMemoryRange>& memoryRanges,
-    uint32_t objectSize) {
+void GameRenderer::copyBufferRanges(VkBuffer srcBuffer, VkBuffer dstBuffer,
+    std::unordered_map<uint32_t, ChunkMemoryRange>& memoryRanges, uint32_t objectSize) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     std::vector<VkBufferCopy> rangesToCopy;
 
-    for (auto&[chunkID, startPos, endPos, offset, objectCount, savedToVBuffer] : memoryRanges) {
-        if (!savedToVBuffer) {
+    for (auto& [chunkID, memoryRange] : memoryRanges) {
+        if (!memoryRange.savedToVBuffer) {
             VkBufferCopy copyRegion{};
-            uint32_t startByte = startPos * objectSize;
+            uint32_t startByte = memoryRange.startPos * objectSize;
             copyRegion.srcOffset = startByte;
             copyRegion.dstOffset = startByte;
-            copyRegion.size = objectCount * objectSize;
-            savedToVBuffer = true;
+            copyRegion.size = memoryRange.objectCount * objectSize;
+            memoryRange.savedToVBuffer = true;
             rangesToCopy.push_back(copyRegion);
             break;
         }

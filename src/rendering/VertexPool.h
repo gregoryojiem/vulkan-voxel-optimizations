@@ -16,7 +16,6 @@ extern std::vector<ChunkVertex> globalChunkVertices;
 extern std::vector<uint32_t> globalChunkIndices;
 
 struct ChunkMemoryRange{
-    uint32_t chunkID;
     uint32_t startPos;
     uint32_t endPos;
     uint32_t offset;
@@ -26,21 +25,22 @@ struct ChunkMemoryRange{
 
 class VertexPool {
 public:
+    static bool newUpdate;
+
     static void addToVertexPool(const Chunk& chunk);
-    static std::vector<ChunkMemoryRange>& getOccupiedVertexRanges();
-    static std::vector<ChunkMemoryRange>& getOccupiedIndexRanges();
+    static std::unordered_map<uint32_t, ChunkMemoryRange>& getOccupiedVertexRanges();
+    static std::unordered_map<uint32_t, ChunkMemoryRange>& getOccupiedIndexRanges();
 
 private:
-    static std::vector<ChunkMemoryRange> occupiedVertexRanges;
-    static std::vector<ChunkMemoryRange> occupiedIndexRanges;
+    static std::unordered_map<uint32_t, ChunkMemoryRange> occupiedVertexRanges;
+    static std::unordered_map<uint32_t, ChunkMemoryRange> occupiedIndexRanges;
     static std::vector<ChunkMemoryRange> freeVertexRanges;
     static std::vector<ChunkMemoryRange> freeIndexRanges;
 
-    static ChunkMemoryRange getAvailableMemoryRange(std::vector<ChunkMemoryRange>& occupiedRanges,
+    static ChunkMemoryRange getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange>& occupiedRanges,
         std::vector<ChunkMemoryRange>& freeMemoryRanges, const Chunk& chunk, uint32_t offset, uint16_t objectCount,
         bool poolType);
-    static void initMemoryRangeInfo(ChunkMemoryRange& rangeToUse, bool poolType, uint32_t chunkID,
-    uint32_t offset, uint32_t objectCount);
+    static void initMemoryRangeInfo(ChunkMemoryRange& rangeToUse, bool poolType, uint32_t offset, uint32_t objectCount);
     static ChunkMemoryRange splitUpAvailableMemory(std::vector<ChunkMemoryRange>& freeMemoryRanges,
         const ChunkMemoryRange* rangeToSplit, uint32_t requiredSpace);
     static ChunkMemoryRange resizePool(bool poolType);

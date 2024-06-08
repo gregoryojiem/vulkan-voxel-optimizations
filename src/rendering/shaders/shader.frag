@@ -12,6 +12,6 @@ void main() {
     if (abs(bary.x) < epsilon || abs(bary.y) < epsilon || abs(bary.z) < epsilon) {
         outColor = vec4(fragColor, 1.0);
     } else {
-        outColor = vec4(fragColor, 0.8);
+        outColor = vec4(fragColor, 1.0);
     }
 }
