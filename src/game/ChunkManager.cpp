@@ -110,27 +110,37 @@ void ChunkManager::meshChunk(Chunk& chunk) {
 
 void ChunkManager::generateBlockMesh(Chunk& chunk, Block* block, std::array<bool, 6>& facesToDraw) {
     std::fill(facesToDraw.begin(), facesToDraw.end(), true);
+
+    int faceCount = 0;
     if (hasBlock(block->position + glm::vec3(0, 1, 0))) {
         facesToDraw[0] = false;
+        faceCount++;
     }
     if (hasBlock(block->position + glm::vec3(0, -1, 0))) {
         facesToDraw[1] = false;
+        faceCount++;
     }
     if (hasBlock(block->position + glm::vec3(0, 0, 1))) {
         facesToDraw[2] = false;
+        faceCount++;
     }
     if (hasBlock(block->position + glm::vec3(0, 0, -1))) {
         facesToDraw[3] = false;
+        faceCount++;
     }
     if (hasBlock(block->position + glm::vec3(-1, 0, 0))) {
         facesToDraw[4] = false;
+        faceCount++;
     }
     if (hasBlock(block->position + glm::vec3(1, 0, 0))) {
         facesToDraw[5] = false;
+        faceCount++;
     }
 
-    insertBlockIndices(chunk.indices, facesToDraw, chunk.vertices.size());
-    insertBlockVertices(chunk.vertices, facesToDraw, block);
+    if (faceCount > 0) {
+        insertBlockIndices(chunk.indices, facesToDraw, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, facesToDraw, block);
+    }
 }
 
 void ChunkManager::addBlock(const Block& block) {
@@ -258,9 +268,11 @@ void ChunkManager::meshAllChunks() {
             TimeManager::startTimer("meshChunk");
             meshChunk(*chunk);
             TimeManager::addTimeToProfiler("meshChunk", TimeManager::finishTimer("meshChunk"));
-
+            
             TimeManager::startTimer("addToVertexPool");
-            VertexPool::addToVertexPool(*chunk);
+            if (!chunk->vertices.empty()) {
+                VertexPool::addToVertexPool(*chunk);
+            }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
         }
     }
