@@ -10,9 +10,10 @@ public:
 
     static bool enabled();
     static void checkValidationLayerSupport();
-    static void setupDebugMessenger(VkInstance& instance);
+    static void setupDebugMessenger(const VkInstance& instance);
 
-    static std::vector<const char *> getValidationLayers();
+    static const char* const* getValidationLayers();
+    static uint32_t getValidationLayerSize();
 
 private:
     static VkDebugUtilsMessengerEXT debugMessenger;

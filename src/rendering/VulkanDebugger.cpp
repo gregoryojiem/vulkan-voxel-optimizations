@@ -41,7 +41,7 @@ bool VulkanDebugger::enabled() {
     return enableValidationLayers;
 }
 
-void VulkanDebugger::setupDebugMessenger(VkInstance& instance) {
+void VulkanDebugger::setupDebugMessenger(const VkInstance& instance) {
     if (!enabled()) {
         return;
     }
@@ -54,8 +54,12 @@ void VulkanDebugger::setupDebugMessenger(VkInstance& instance) {
     }
 }
 
- std::vector<const char *> VulkanDebugger::getValidationLayers() {
-    return validationLayers;
+ const char* const* VulkanDebugger::getValidationLayers() {
+    return validationLayers.data();
+}
+
+uint32_t VulkanDebugger::getValidationLayerSize() {
+    return validationLayers.size();
 }
 
 void VulkanDebugger::checkValidationLayerSupport() {
