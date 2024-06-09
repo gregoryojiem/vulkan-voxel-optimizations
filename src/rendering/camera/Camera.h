@@ -4,16 +4,9 @@
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../VulkanUtil.h"
 #include "../../utility/TimeManager.h"
 #include "../../utility/InputHandler.h"
-
-struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::mat4 textView;
-    alignas(16) glm::mat4 textProj;
-};
 
 class Camera {
 public:
