@@ -51,6 +51,8 @@ add_executable(vulkan_voxel
         src/rendering/VulkanUtil.h
         src/rendering/VulkanDebugger.cpp
         src/rendering/VulkanDebugger.h
+        src/rendering/Swapchain.cpp
+        src/rendering/Swapchain.h
 )
 
 target_link_libraries(vulkan_voxel
