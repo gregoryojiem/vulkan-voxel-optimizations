@@ -76,8 +76,8 @@ private:
 
     static void createQuadBuffers(uint32_t textSize);
     static void updateVertexBuffer();
-    static void createVertexBuffer();
-    static void createIndexBuffer(uint32_t textSize);
+    static void createTextVertexBuffer();
+    static void createTextIndexBuffer(uint32_t textSize);
     static void descriptorInit();
     static void createTextDescriptorPool();
     static void createTextDescriptorSets();

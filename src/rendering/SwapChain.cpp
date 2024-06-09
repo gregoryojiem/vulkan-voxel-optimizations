@@ -107,21 +107,21 @@ void SwapChain::createImageViews(const VkDevice& device) {
     swapChainImageViews.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
-        swapChainImageViews[i] = createImageView(device,
-            swapChainImages[i],
-            swapChainImageFormat,
-            VK_IMAGE_ASPECT_COLOR_BIT);
+        swapChainImageViews[i] = createImageView(swapChainImages[i],
+                                                 swapChainImageFormat,
+                                                 VK_IMAGE_ASPECT_COLOR_BIT,
+                                                 device);
     }
 }
 
 void SwapChain::createDepthResources(const VkDevice& device, const VkPhysicalDevice& physDevice) {
     VkFormat depthFormat = findDepthFormat(physDevice);
-    createImage(device, physDevice, getWidth(), getHeight(), depthFormat,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        depthImage, depthImageMemory);
-    depthImageView = createImageView(device, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    createImage(depthImage, depthImageMemory, device, physDevice, getWidth(),
+                getHeight(),
+                depthFormat,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, device);
 }
 
 void SwapChain::createFramebuffers(const VkDevice& device, const VkRenderPass& renderPass) {

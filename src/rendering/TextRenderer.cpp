@@ -8,8 +8,10 @@
 #include <stb_image.h>
 
 #include "GameRenderer.h"
+#include "VulkanBufferUtil.h"
 #include "VulkanUtil.h"
 #include "../utility/GraphicsUtil.h"
+#include "camera/Camera.h"
 
 int TextRenderer::atlasWidth;
 int TextRenderer::atlasHeight;
@@ -57,14 +59,14 @@ void TextRenderer::init() {
     createFontAtlasVkImage();
     getFontAtlasGlyphs();
 
-    GameRenderer::createUniformBuffers(textUniformBuffers, textUniformBuffersMemory, textUniformBuffersMapped);
+    createUniformBuffers(textUniformBuffers, textUniformBuffersMemory, textUniformBuffersMapped, MAX_FRAMES_IN_FLIGHT,
+        GameRenderer::device, GameRenderer::physicalDevice);
     descriptorInit();
 
-    const std::vector<char> vertShaderCode = GameRenderer::readFile("../src/rendering/shaders/text_vert.spv");
-    const std::vector<char> fragShaderCode = GameRenderer::readFile("../src/rendering/shaders/text_frag.spv");
-    GameRenderer::createGraphicsPipeline(
+    createGraphicsPipeline(
         pipelineLayout, textGraphicsPipeline,
-        vertShaderCode, fragShaderCode,
+        GameRenderer::device, GameRenderer::renderPass, GameRenderer::swapChain.getExtent(),
+        "../src/rendering/shaders/text_vert.spv", "../src/rendering/shaders/text_frag.spv",
         TexturedVertex::getBindingDescription(),
         TexturedVertex::getAttributeDescriptions(),
         textDescriptorSetLayout,
@@ -84,8 +86,8 @@ void TextRenderer::createQuadBuffers(uint32_t textSize) {
         return;
     }
 
-    createVertexBuffer();
-    createIndexBuffer(textSize);
+    createTextVertexBuffer();
+    createTextIndexBuffer(textSize);
     longestTextSeen = textSize;
 }
 
@@ -97,26 +99,27 @@ void TextRenderer::updateVertexBuffer() {
     memcpy(data, textQuadVertices.data(), bufferSize);
     vkUnmapMemory(GameRenderer::device, textStagingBufferMemory);
 
-    GameRenderer::copyBuffer(textStagingBuffer, textVertexBuffer, bufferSize);
+    copyBuffer(textStagingBuffer, textVertexBuffer, bufferSize, GameRenderer::device, GameRenderer::commandPool,
+        GameRenderer::graphicsQueue);
 }
 
-void TextRenderer::createVertexBuffer() {
+void TextRenderer::createTextVertexBuffer() {
     const uint32_t bufferSize = sizeof(TexturedVertex) * textQuadVertices.size();
-    GameRenderer::destroyBuffer(textVertexBuffer, textVertexBufferMemory);
-    GameRenderer::createVertexBuffer(textVertexBuffer, textVertexBufferMemory, bufferSize, textQuadVertices);
+    destroyBuffer(textVertexBuffer, textVertexBufferMemory, GameRenderer::device);
+    createVertexBuffer(textVertexBuffer, textVertexBufferMemory, bufferSize, textQuadVertices,
+        GameRenderer::device, GameRenderer::physicalDevice, GameRenderer::commandPool, GameRenderer::graphicsQueue);
 
-    GameRenderer::destroyBuffer(textStagingBuffer, textStagingBufferMemory);
-    GameRenderer::createBuffer(bufferSize,
+    destroyBuffer(textStagingBuffer, textStagingBufferMemory, GameRenderer::device);
+    createBuffer(textStagingBuffer, textStagingBufferMemory, bufferSize,
+        GameRenderer::device, GameRenderer::physicalDevice,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        textStagingBuffer,
-        textStagingBufferMemory);
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     textVertexMemorySize = bufferSize;
 }
 
-void TextRenderer::createIndexBuffer(uint32_t textSize) {
-    GameRenderer::destroyBuffer(textIndexBuffer, textIndexBufferMemory);
+void TextRenderer::createTextIndexBuffer(uint32_t textSize) {
+    destroyBuffer(textIndexBuffer, textIndexBufferMemory, GameRenderer::device);
 
     for (uint32_t i = longestTextSeen; i < textSize; i++) {
         std::vector<uint32_t> newCharIndices = generateTexturedQuadIndices(i * 4);
@@ -124,7 +127,9 @@ void TextRenderer::createIndexBuffer(uint32_t textSize) {
     }
 
     const uint32_t indexBufferSize = sizeof(uint32_t) * textQuadIndices.size();
-    GameRenderer::createIndexBuffer(textIndexBuffer, textIndexBufferMemory, indexBufferSize, textQuadIndices);
+    createIndexBuffer(textIndexBuffer, textIndexBufferMemory, indexBufferSize, textQuadIndices,
+        GameRenderer::device, GameRenderer::physicalDevice,
+        GameRenderer::commandPool, GameRenderer::graphicsQueue);
 }
 
 void TextRenderer::getFontAtlasGlyphs() {
@@ -165,41 +170,48 @@ void TextRenderer::createFontAtlasVkImage() {
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    GameRenderer::createBuffer(imageSize,
+    createBuffer(stagingBuffer, stagingBufferMemory, imageSize,
+        GameRenderer::device, GameRenderer::physicalDevice,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        stagingBuffer, stagingBufferMemory);
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
     vkMapMemory(GameRenderer::device, stagingBufferMemory, 0, imageSize, 0, &data);
     memcpy(data, pixels, imageSize);
     vkUnmapMemory(GameRenderer::device, stagingBufferMemory);
 
-    createImage(GameRenderer::device, GameRenderer::physicalDevice, atlasWidth, atlasHeight,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        fontAtlasImage, fontAtlasMemory);
+    createImage(fontAtlasImage, fontAtlasMemory, GameRenderer::device, GameRenderer::physicalDevice,
+                atlasWidth,
+                atlasHeight,
+                VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    GameRenderer::transitionImageLayout(fontAtlasImage,
+    transitionImageLayout(fontAtlasImage,
         VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    GameRenderer::copyBufferToImage(stagingBuffer, fontAtlasImage, atlasWidth, atlasHeight);
-
-    GameRenderer::transitionImageLayout(fontAtlasImage,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        GameRenderer::device,
+        GameRenderer::commandPool,
+        GameRenderer::graphicsQueue);
 
-    GameRenderer::destroyBuffer(stagingBuffer, stagingBufferMemory);
+    copyBufferToImage(stagingBuffer, fontAtlasImage, atlasWidth, atlasHeight, GameRenderer::device,
+        GameRenderer::commandPool, GameRenderer::graphicsQueue);
 
-    fontAtlasImageView = GameRenderer::createTextureImageView(fontAtlasImage);
-    GameRenderer::createTextureSampler(fontAtlasSampler);
+    transitionImageLayout(fontAtlasImage,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        GameRenderer::device,
+        GameRenderer::commandPool,
+        GameRenderer::graphicsQueue);
+
+    destroyBuffer(stagingBuffer, stagingBufferMemory, GameRenderer::device);
+
+    fontAtlasImageView = createTextureImageView(fontAtlasImage, GameRenderer::device);
+    createTextureSampler(fontAtlasSampler, GameRenderer::device, GameRenderer::physicalDevice);
 }
 
 void TextRenderer::descriptorInit() {
-    GameRenderer::createDescriptorSetLayout(textDescriptorSetLayout, true);
+    createDescriptorSetLayout(textDescriptorSetLayout, GameRenderer::device, true);
     createTextDescriptorPool();
     createTextDescriptorSets();
 }
@@ -303,12 +315,11 @@ bool TextRenderer::createDrawParamsBuffer(uint32_t drawCount) {
     }
 
     if (bufferSize != textDrawParamsMemorySize) {
-        GameRenderer::destroyBuffer(textDrawParamsBuffer, textDrawParamsBufferMemory);
-        GameRenderer::createBuffer(bufferSize,
+        destroyBuffer(textDrawParamsBuffer, textDrawParamsBufferMemory, GameRenderer::device);
+        createBuffer(textDrawParamsBuffer, textDrawParamsBufferMemory, bufferSize,
+            GameRenderer::device, GameRenderer::physicalDevice,
             VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            textDrawParamsBuffer,
-            textDrawParamsBufferMemory);
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         textDrawParamsMemorySize = bufferSize;
     }
@@ -341,13 +352,13 @@ bool TextRenderer::createDrawParamsBuffer(uint32_t drawCount) {
 
 void TextRenderer::cleanup() {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        GameRenderer::destroyBuffer(textUniformBuffers[i], textUniformBuffersMemory[i]);
+        destroyBuffer(textUniformBuffers[i], textUniformBuffersMemory[i], GameRenderer::device);
     }
 
-    GameRenderer::destroyBuffer(textIndexBuffer, textIndexBufferMemory);
-    GameRenderer::destroyBuffer(textVertexBuffer, textVertexBufferMemory);
-    GameRenderer::destroyBuffer(textStagingBuffer, textStagingBufferMemory);
-    GameRenderer::destroyBuffer(textDrawParamsBuffer, textDrawParamsBufferMemory);
+    destroyBuffer(textIndexBuffer, textIndexBufferMemory, GameRenderer::device);
+    destroyBuffer(textVertexBuffer, textVertexBufferMemory, GameRenderer::device);
+    destroyBuffer(textStagingBuffer, textStagingBufferMemory, GameRenderer::device);
+    destroyBuffer(textDrawParamsBuffer, textDrawParamsBufferMemory, GameRenderer::device);
 
     vkDestroyDescriptorPool(GameRenderer::device, textDescriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(GameRenderer::device, textDescriptorSetLayout, nullptr);
@@ -387,8 +398,8 @@ void TextRenderer::generateTextQuads() {
 
             glm::vec2 startPos = textToRender.position;
 
-            float widthOffset = static_cast<float>(GameRenderer::getWidth())/2;
-            float heightOffset = static_cast<float>(GameRenderer::getHeight())/2;
+            float widthOffset = static_cast<float>(GameRenderer::getWindowWidth())/2;
+            float heightOffset = static_cast<float>(GameRenderer::getWindowHeight())/2;
 
             startPos += glm::vec2(-widthOffset, -heightOffset);
             startPos[0] += static_cast<float>(currentAdvance);
