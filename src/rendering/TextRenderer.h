@@ -23,11 +23,16 @@ struct ScreenText {
 class TextRenderer {
 public:
     static void init();
+
     static void cleanup();
+
     static void recordDrawCommands(VkCommandBuffer commandBuffer, uint32_t currentFrame);
 
-    static void addText(const std::string& text, const glm::vec2& position, float scale, uint32_t id);
+    static void addText(const std::string &text, const glm::vec2 &position, float scale, uint32_t id);
+
     static void generateTextQuads();
+
+    static void printFPS();
 
 private:
     static int atlasWidth;
@@ -50,10 +55,6 @@ private:
     static VkBuffer textIndexBuffer;
     static VkDeviceMemory textIndexBufferMemory;
 
-    static std::vector<VkBuffer> textUniformBuffers;
-    static std::vector<VkDeviceMemory> textUniformBuffersMemory;
-    static std::vector<void*> textUniformBuffersMapped;
-
     static VkBuffer textDrawParamsBuffer;
     static VkDeviceMemory textDrawParamsBufferMemory;
     static uint32_t textDrawParamsMemorySize;
@@ -75,13 +76,21 @@ private:
     static void getFontAtlasGlyphs();
 
     static void createQuadBuffers(uint32_t textSize);
+
     static void updateVertexBuffer();
+
     static void createTextVertexBuffer();
+
     static void createTextIndexBuffer(uint32_t textSize);
+
     static void descriptorInit();
+
     static void createTextDescriptorPool();
+
     static void createTextDescriptorSets();
+
     static void createFontAtlasVkImage();
+
     static bool createDrawParamsBuffer(uint32_t drawCount);
 };
 
