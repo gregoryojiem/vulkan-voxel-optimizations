@@ -4,7 +4,6 @@
 #include "ChunkRenderer.h"
 #include "TextRenderer.h"
 #include "Camera.h"
-#include "../util/TimeManager.h"
 
 class MainRenderer {
 public:
@@ -14,11 +13,10 @@ public:
 
     void cleanup();
 
-    GLFWwindow *getWindow();
+    static GLFWwindow *getWindow();
 
 private:
     Camera camera;
-    TimeManager timeManager;
     CoreRenderer coreRenderer;
     ChunkRenderer chunkRenderer;
     TextRenderer textRenderer;

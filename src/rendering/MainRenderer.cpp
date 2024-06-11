@@ -1,11 +1,12 @@
 #include "MainRenderer.h"
 
 #include "VulkanDebugger.h"
+#include "../util/TimeManager.h"
 
 void MainRenderer::init() {
     coreRenderer.init();
     chunkRenderer.init();
-    TextRenderer::init();
+    textRenderer.init();
     camera.init(CoreRenderer::window, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 }
 
@@ -17,13 +18,14 @@ void MainRenderer::draw() {
         return;
     }
     const uint32_t frame = CoreRenderer::currentFrame;
-    chunkRenderer.draw(CoreRenderer::commandBuffers[frame], frame, Camera::ubo);
-    TextRenderer::recordDrawCommands(CoreRenderer::commandBuffers[frame], frame);
+    const VkCommandBuffer commandBuffer = CoreRenderer::commandBuffers[frame];
+    chunkRenderer.draw(commandBuffer, frame, Camera::ubo);
+    textRenderer.draw(CoreRenderer::device, commandBuffer, frame, TimeManager::queryFPS());
     coreRenderer.finishDraw(imageIndex);
 }
 
 void MainRenderer::cleanup() {
-    TextRenderer::cleanup();
+    textRenderer.cleanup(CoreRenderer::device);
     chunkRenderer.cleanup(CoreRenderer::device, MAX_FRAMES_IN_FLIGHT);
     VulkanDebugger::cleanup(CoreRenderer::instance);
     coreRenderer.cleanup();

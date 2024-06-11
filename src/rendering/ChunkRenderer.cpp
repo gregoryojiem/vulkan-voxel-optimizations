@@ -12,8 +12,8 @@
 void ChunkRenderer::init() {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);
     createDescriptorSetLayout(descriptorSetLayout, false);
-    createDescriptorPool(descriptorPool);
-    createDescriptorSets(descriptorSets, descriptorSetLayout, descriptorPool, uniformBuffers);
+    createDescriptorPool(descriptorPool, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    createDescriptorSetsUB(descriptorSets, descriptorSetLayout, descriptorPool, uniformBuffers);
     createGraphicsPipeline(
         pipelineLayout, graphicsPipeline,
         "../src/rendering/shaders/vert.spv", "../src/rendering/shaders/frag.spv",
@@ -73,9 +73,9 @@ void ChunkRenderer::updateBuffers() const {
     if (!VertexPool::newUpdate) {
         return;
     }
-    updateBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory, globalChunkVertices.data(),
+    updateChunkBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory, globalChunkVertices.data(),
                  vertexMemorySize, sizeof(ChunkVertex), VertexPool::getOccupiedVertexRanges());
-    updateBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory, globalChunkIndices.data(),
+    updateChunkBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory, globalChunkIndices.data(),
                  indexMemorySize, sizeof(globalChunkIndices[0]), VertexPool::getOccupiedIndexRanges());
     updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedIndexRanges().size());
     VertexPool::newUpdate = false;
