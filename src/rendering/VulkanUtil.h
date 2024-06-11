@@ -4,31 +4,10 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan_core.h>
+
+#include "VulkanStructs.h"
 #include "GLFW/glfw3.h"
-
-//UTILITY STRUCTS
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    [[nodiscard]] bool isComplete() const;
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::mat4 textView;
-    alignas(16) glm::mat4 textProj;
-};
 
 // OBJECT CREATION FUNCTIONS
 GLFWwindow *initWindow(void *userPtr, GLFWframebuffersizefun resizeCallback, int width, int height);
