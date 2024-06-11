@@ -1,7 +1,5 @@
 #include "InputHandler.h"
 
-#include <iostream>
-
 InputState InputHandler::currentInputs;
 bool InputHandler::mouseLocked = false;
 double InputHandler::lastPosX;
