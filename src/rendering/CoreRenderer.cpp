@@ -1,8 +1,8 @@
 #include "CoreRenderer.h"
 
-#include "ChunkRenderer.h"
-#include "TextRenderer.h"
-#include "../utility/InputHandler.h"
+#include <array>
+#include <stdexcept>
+
 #include "VulkanUtil.h"
 
 int DEFAULT_WIDTH = 1280;
@@ -14,7 +14,7 @@ static std::vector deviceExtensions = {
 };
 
 GLFWwindow *CoreRenderer::window;
-bool CoreRenderer::windowResized; //todo move to private and remove ::'s
+bool CoreRenderer::windowResized;
 VkInstance CoreRenderer::instance;
 VkSurfaceKHR CoreRenderer::surface;
 VkDevice CoreRenderer::device;
@@ -29,7 +29,6 @@ std::vector<VkSemaphore> CoreRenderer::imageAvailableSemaphores;
 std::vector<VkSemaphore> CoreRenderer::renderFinishedSemaphores;
 std::vector<VkFence> CoreRenderer::inFlightFences;
 uint32_t CoreRenderer::currentFrame;
-GameRenderer CoreRenderer::gameRenderer;
 
 void CoreRenderer::init() {
     window = initWindow(this, framebufferResizeCallback, DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -44,13 +43,9 @@ void CoreRenderer::init() {
     swapChain.createFramebuffers(device, renderPass);
     createCommandBuffers(commandBuffers);
     createSyncObjects(imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences);
-
-    gameRenderer.init();
-    InputHandler::init(window);
-    TextRenderer::init();
 }
 
-void CoreRenderer::drawFrame() {
+uint32_t CoreRenderer::beginDraw() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
@@ -59,7 +54,7 @@ void CoreRenderer::drawFrame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         swapChain.recreate(window, device, physicalDevice, surface, renderPass);
-        return;
+        return -1;
     }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
@@ -71,8 +66,12 @@ void CoreRenderer::drawFrame() {
     vkResetCommandBuffer(commandBuffer, 0);
 
     beginRecording(commandBuffer, imageIndex);
-    TextRenderer::recordDrawCommands(commandBuffer, currentFrame);
-    endRecording(commandBuffer);
+    return imageIndex;
+}
+
+void CoreRenderer::finishDraw(uint32_t imageIndex) {
+    VkCommandBuffer commandBuffer = commandBuffers[currentFrame];
+    finishRecording(commandBuffer);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -103,7 +102,7 @@ void CoreRenderer::drawFrame() {
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
 
-    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || windowResized) {
         windowResized = false;
@@ -155,7 +154,7 @@ void CoreRenderer::beginRecording(VkCommandBuffer commandBuffer, uint32_t imageI
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void CoreRenderer::endRecording(VkCommandBuffer commandBuffer) {
+void CoreRenderer::finishRecording(VkCommandBuffer commandBuffer) {
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -165,8 +164,6 @@ void CoreRenderer::endRecording(VkCommandBuffer commandBuffer) {
 
 void CoreRenderer::cleanup() {
     vkDeviceWaitIdle(device);
-    gameRenderer.cleanup(device, MAX_FRAMES_IN_FLIGHT);
-    TextRenderer::cleanup();
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -179,7 +176,6 @@ void CoreRenderer::cleanup() {
     vkDestroyRenderPass(device, renderPass, nullptr);
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
-    VulkanDebugger::cleanup(instance);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
     glfwTerminate();

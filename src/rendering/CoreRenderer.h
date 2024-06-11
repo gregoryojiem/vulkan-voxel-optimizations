@@ -2,12 +2,10 @@
 #define CORERENDERER_H
 
 #include <cstdint>
-#include <string>
 #include <vector>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 
-#include "ChunkRenderer.h"
 #include "Swapchain.h"
 
 extern int DEFAULT_WIDTH;
@@ -17,7 +15,7 @@ const extern int MAX_FRAMES_IN_FLIGHT;
 class CoreRenderer {
 public:
     static GLFWwindow *window;
-    static bool windowResized; //todo move to private and remove ::'s
+    static bool windowResized;
     static VkInstance instance;
     static VkSurfaceKHR surface;
     static VkDevice device;
@@ -32,24 +30,24 @@ public:
     static std::vector<VkSemaphore> renderFinishedSemaphores;
     static std::vector<VkFence> inFlightFences;
     static uint32_t currentFrame;
-    static GameRenderer gameRenderer;
 
     void init();
 
-    static void drawFrame();
+    uint32_t beginDraw();
 
-    static void beginRecording(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void finishDraw(uint32_t imageIndex);
 
-    static void endRecording(VkCommandBuffer commandBuffer);
+    void beginRecording(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-    static void cleanup();
+    void finishRecording(VkCommandBuffer commandBuffer);
+
+    void cleanup();
 
     static VkExtent2D getExtent();
 
     static uint32_t getWindowWidth();
 
     static uint32_t getWindowHeight();
-
 private:
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
 };

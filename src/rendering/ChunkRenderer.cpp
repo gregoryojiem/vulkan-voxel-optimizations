@@ -7,10 +7,9 @@
 
 #include "VulkanBufferUtil.h"
 #include "VulkanUtil.h"
-#include "camera/Camera.h"
 #include "VertexPool.h"
 
-void GameRenderer::init() {
+void ChunkRenderer::init() {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);
     createDescriptorSetLayout(descriptorSetLayout, false);
     createDescriptorPool(descriptorPool);
@@ -34,7 +33,7 @@ void GameRenderer::init() {
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
-void GameRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame) {
+void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject& ubo) {
     resizeBuffers();
     updateBuffers();
 
@@ -49,11 +48,10 @@ void GameRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFr
     const uint32_t drawCount = VertexPool::getOccupiedIndexRanges().size();
     vkCmdDrawIndexedIndirect(commandBuffer, drawParamsBuffer, 0, drawCount, sizeof(VkDrawIndexedIndirectCommand));
 
-    const UniformBufferObject ubo = Camera::ubo;
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }
 
-void GameRenderer::resizeBuffers() {
+void ChunkRenderer::resizeBuffers() {
     uint32_t verticesSize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
     uint32_t indicesSize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
     uint32_t drawParamsSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedIndexRanges().size();
@@ -81,7 +79,7 @@ void GameRenderer::resizeBuffers() {
     }
 }
 
-void GameRenderer::updateBuffers() const {
+void ChunkRenderer::updateBuffers() const {
     if (!VertexPool::newUpdate) {
         return;
     }
@@ -93,7 +91,7 @@ void GameRenderer::updateBuffers() const {
     VertexPool::newUpdate = false;
 }
 
-void GameRenderer::cleanup(const VkDevice &device, uint32_t maxFramesInFlight) const {
+void ChunkRenderer::cleanup(const VkDevice &device, uint32_t maxFramesInFlight) const {
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         destroyBuffer(uniformBuffers[i], uniformBuffersMemory[i]);
     }

@@ -1,17 +1,17 @@
-#ifndef GAMERENDERER_H
-#define GAMERENDERER_H
+#ifndef CHUNKRENDERER_H
+#define CHUNKRENDERER_H
 
 #define GLFW_INCLUDE_VULKAN
 #include <vector>
 
-#include "SwapChain.h"
-#include "VulkanDebugger.h"
+#include "VulkanStructs.h"
 
-class GameRenderer {
+
+class ChunkRenderer {
 public:
     void init();
 
-    void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame);
+    void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject& ubo);
 
     void cleanup(const VkDevice &device, uint32_t maxFramesInFlight) const;
 
@@ -48,4 +48,4 @@ private:
     void updateBuffers() const;
 };
 
-#endif //GAMERENDERER_H
+#endif //CHUNKRENDERER_H
