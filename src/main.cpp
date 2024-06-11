@@ -3,30 +3,23 @@
 #include <thread>
 
 #include "game/World.h"
-#include "rendering/GameRenderer.h"
-#include "rendering/TextRenderer.h"
-#include "rendering/Vertex.h"
+#include "rendering/MainRenderer.h"
 
-GameRenderer renderer;
+MainRenderer mainRenderer;
 World world;
-TimeManager timeManager;
-Camera camera;
 
 int main() {
     try {
         world.init();
-        renderer.init();
-        camera.init(WIDTH, HEIGHT);
+        mainRenderer.init();
 
-        while (!glfwWindowShouldClose(renderer.window)) {
+        while (!glfwWindowShouldClose(mainRenderer.getWindow())) {
             glfwPollEvents();
             world.mainLoop();
-            camera.update(TimeManager::setDeltaTime());
-            renderer.drawFrame();
+            mainRenderer.draw();
         }
 
-        vkDeviceWaitIdle(GameRenderer::getDevice());
-        renderer.cleanup();
+        mainRenderer.cleanup();
     }
 
     catch (const std::exception &e) {

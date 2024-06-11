@@ -2,15 +2,15 @@
 #define TEXTRENDERER_H
 
 #include <map>
-#include <glm/vec2.hpp>
+#include <../../../dependencies/glm-1.0.1/glm/vec2.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "Vertex.h"
+#include "misc/Vertex.h"
 
 struct Character {
     glm::vec4 planeQuad; //in the form of left, bottom, right top, with left bottom being on the baseline
     glm::vec4 atlasQuad;
-    double advance;
+    float advance;
 };
 
 struct ScreenText {
@@ -22,67 +22,65 @@ struct ScreenText {
 
 class TextRenderer {
 public:
-    static void init();
-    static void cleanup();
-    static void recordDrawCommands(VkCommandBuffer commandBuffer, uint32_t currentFrame);
+    void init();
 
-    static void addText(const std::string& text, const glm::vec2& position, float scale, uint32_t id);
-    static void generateTextQuads();
+    void addText(const std::string &text, const glm::vec2 &position, float scale, uint32_t id);
+
+    void draw(const VkDevice &device, const VkCommandBuffer &commandBuffer, uint32_t currentFrame, float fps);
+
+    void cleanup(const VkDevice &device) const;
 
 private:
-    static int atlasWidth;
-    static int atlasHeight;
-
-    static std::vector<TexturedVertex> textQuadVertices;
-    static std::vector<uint32_t> textQuadIndices;
-
-    static std::vector<ScreenText> activeText;
-    static std::map<char, Character> characters;
     const static std::string fontPath;
     const static std::string fontToUse;
+    int atlasWidth{};
+    int atlasHeight{};
 
-    static VkBuffer textVertexBuffer;
-    static VkDeviceMemory textVertexBufferMemory;
-    static uint32_t textVertexMemorySize;
-    static VkBuffer textStagingBuffer;
-    static VkDeviceMemory textStagingBufferMemory;
+    VkBuffer textVertexBuffer{};
+    VkDeviceMemory textVertexBufferMemory{};
+    uint32_t textVertexMemorySize{};
+    VkBuffer textStagingBuffer{};
+    VkDeviceMemory textStagingBufferMemory{};
 
-    static VkBuffer textIndexBuffer;
-    static VkDeviceMemory textIndexBufferMemory;
+    VkBuffer textIndexBuffer{};
+    VkDeviceMemory textIndexBufferMemory{};
 
-    static std::vector<VkBuffer> textUniformBuffers;
-    static std::vector<VkDeviceMemory> textUniformBuffersMemory;
-    static std::vector<void*> textUniformBuffersMapped;
+    VkBuffer textDrawParamsBuffer{};
+    VkDeviceMemory textDrawParamsBufferMemory{};
+    uint32_t textDrawParamsMemorySize{};
 
-    static VkBuffer textDrawParamsBuffer;
-    static VkDeviceMemory textDrawParamsBufferMemory;
-    static uint32_t textDrawParamsMemorySize;
+    VkImage fontAtlasImage{};
+    VkDeviceMemory fontAtlasMemory{};
+    VkImageView atlasImageView{};
+    VkSampler atlasSampler{};
 
-    static VkImage fontAtlasImage;
-    static VkDeviceMemory fontAtlasMemory;
-    static VkImageView fontAtlasImageView;
-    static VkSampler fontAtlasSampler;
+    VkDescriptorSetLayout descriptorSetLayout{};
+    VkDescriptorPool descriptorPool{};
+    std::vector<VkDescriptorSet> descriptorSets;
 
-    static VkDescriptorSetLayout textDescriptorSetLayout;
-    static VkDescriptorPool textDescriptorPool;
-    static std::vector<VkDescriptorSet> textDescriptorSets;
+    VkPipelineLayout pipelineLayout{};
+    VkPipeline textGraphicsPipeline{};
 
-    static VkPipelineLayout pipelineLayout;
-    static VkPipeline textGraphicsPipeline;
+    std::vector<TexturedVertex> textQuadVertices;
+    std::vector<uint32_t> textQuadIndices;
 
-    static uint32_t longestTextSeen;
+    uint32_t longestTextSeen{};
+    std::vector<ScreenText> activeText;
+    std::map<char, Character> characters;
 
-    static void getFontAtlasGlyphs();
+    void createFontAtlasGlyphs();
 
-    static void createQuadBuffers(uint32_t textSize);
-    static void updateVertexBuffer();
-    static void createVertexBuffer();
-    static void createIndexBuffer(uint32_t textSize);
-    static void descriptorInit();
-    static void createTextDescriptorPool();
-    static void createTextDescriptorSets();
-    static void createFontAtlasVkImage();
-    static bool createDrawParamsBuffer(uint32_t drawCount);
+    void createTextQuads();
+
+    void createQuadBuffers(uint32_t textSize);
+
+    void createTextVertexBuffer();
+
+    void createTextIndexBuffer(uint32_t textSize);
+
+    bool createDrawParamsBuffer(const VkDevice &device, uint32_t drawCount);
+
+    void printFPS(float fps);
 };
 
 #endif //TEXTRENDERER_H

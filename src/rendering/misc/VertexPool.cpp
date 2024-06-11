@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include "../utility/TimeManager.h"
-
 std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::vector<uint32_t> globalChunkIndices(CHUNK_INDICES_SIZE);
 
@@ -13,35 +11,37 @@ std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES
 std::vector<ChunkMemoryRange> VertexPool::freeIndexRanges = {{0, CHUNK_INDICES_SIZE, CHUNK_INDICES_SIZE}};
 bool VertexPool::newUpdate;
 
-void VertexPool::addToVertexPool(const Chunk& chunk) {
-    ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunk,
-        0, chunk.vertices.size(), false);
+void VertexPool::addToVertexPool(const std::vector<ChunkVertex> &vertices, const std::vector<uint32_t> &indices,
+                                 uint32_t chunkID) {
+    ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
+                                                                0, vertices.size(), false);
 
-    ChunkMemoryRange indexRangeToUse = getAvailableMemoryRange(occupiedIndexRanges, freeIndexRanges, chunk,
-        vertexRangeToUse.startPos, chunk.indices.size(), true);
+    ChunkMemoryRange indexRangeToUse = getAvailableMemoryRange(occupiedIndexRanges, freeIndexRanges, chunkID,
+                                                               vertexRangeToUse.startPos, indices.size(), true);
 
-    std::copy(chunk.vertices.begin(), chunk.vertices.end(), globalChunkVertices.begin() + vertexRangeToUse.startPos);
-    std::copy(chunk.indices.begin(), chunk.indices.end(), globalChunkIndices.begin() + indexRangeToUse.startPos);
+    std::copy(vertices.begin(), vertices.end(), globalChunkVertices.begin() + vertexRangeToUse.startPos);
+    std::copy(indices.begin(), indices.end(), globalChunkIndices.begin() + indexRangeToUse.startPos);
 
     newUpdate = true;
 }
 
-std::unordered_map<uint32_t, ChunkMemoryRange>& VertexPool::getOccupiedVertexRanges() {
+std::unordered_map<uint32_t, ChunkMemoryRange> &VertexPool::getOccupiedVertexRanges() {
     return occupiedVertexRanges;
 }
 
-std::unordered_map<uint32_t, ChunkMemoryRange>& VertexPool::getOccupiedIndexRanges() {
+std::unordered_map<uint32_t, ChunkMemoryRange> &VertexPool::getOccupiedIndexRanges() {
     return occupiedIndexRanges;
 }
 
-ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange>& occupiedRanges,
-    std::vector<ChunkMemoryRange>& freeMemoryRanges, const Chunk& chunk,  uint32_t offset, const uint16_t objectCount,
-    const bool poolType) {
-    const auto requiredObjects  = *std::lower_bound(powersOfTwo.begin(), powersOfTwo.end(), objectCount);
+ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange> &occupiedRanges,
+                                                     std::vector<ChunkMemoryRange> &freeMemoryRanges, uint32_t chunkID,
+                                                     uint32_t offset, const uint16_t objectCount,
+                                                     const bool poolType) {
+    const auto requiredObjects = *std::lower_bound(powersOfTwo.begin(), powersOfTwo.end(), objectCount);
     // if the chunk has already been allocated memory, and it is enough space to save the new mesh, save it
     // otherwise, free up the chunk's occupied range and move on
-    if (occupiedRanges.contains(chunk.ID)) {
-        ChunkMemoryRange& occupiedRange = occupiedRanges.at(chunk.ID);
+    if (occupiedRanges.contains(chunkID)) {
+        ChunkMemoryRange &occupiedRange = occupiedRanges.at(chunkID);
 
         if (occupiedRange.endPos - occupiedRange.startPos >= requiredObjects) {
             initMemoryRangeInfo(occupiedRange, poolType, offset, objectCount);
@@ -49,7 +49,7 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t
         }
 
         freeMemoryRanges.push_back(occupiedRange);
-        occupiedRanges.erase(chunk.ID);
+        occupiedRanges.erase(chunkID);
     }
 
     // look for a suitable existing range with the correct size
@@ -57,8 +57,8 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t
     uint32_t bestSplittableRangeSize = UINT32_MAX;
     auto eraseRangeIterator = freeMemoryRanges.end();
 
-    ChunkMemoryRange* splittableRange = nullptr;
-    ChunkMemoryRange* suitableRange = nullptr;
+    ChunkMemoryRange *splittableRange = nullptr;
+    ChunkMemoryRange *suitableRange = nullptr;
     for (auto it = freeMemoryRanges.begin(); it != freeMemoryRanges.end(); ++it) {
         uint32_t sizeOfRange = it->endPos - it->startPos;
 
@@ -80,25 +80,22 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t
     if (suitableRange != nullptr) {
         rangeToUse = *suitableRange;
         freeMemoryRanges.erase(eraseRangeIterator);
-    }
-
-    else if (splittableRange != nullptr) {
+    } else if (splittableRange != nullptr) {
         rangeToUse = *splittableRange;
         freeMemoryRanges.erase(eraseRangeIterator);
         rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &rangeToUse, requiredObjects);
-    }
-
-    else {
+    } else {
         const ChunkMemoryRange resizedRange = resizePool(poolType);
         rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &resizedRange, requiredObjects);
     }
 
     initMemoryRangeInfo(rangeToUse, poolType, offset, objectCount);
-    occupiedRanges[chunk.ID] = rangeToUse;
+    occupiedRanges[chunkID] = rangeToUse;
     return rangeToUse;
 }
 
-void VertexPool::initMemoryRangeInfo(ChunkMemoryRange& rangeToUse, bool poolType, uint32_t offset, uint32_t objectCount) {
+void VertexPool::initMemoryRangeInfo(ChunkMemoryRange &rangeToUse, bool poolType, uint32_t offset,
+                                     uint32_t objectCount) {
     if (poolType) {
         rangeToUse.offset = offset;
     }
@@ -108,8 +105,8 @@ void VertexPool::initMemoryRangeInfo(ChunkMemoryRange& rangeToUse, bool poolType
 
 // required slot must be power of 2
 // returns a memory range == required space, and adds the rest from the split to the free ranges
-ChunkMemoryRange VertexPool::splitUpAvailableMemory(std::vector<ChunkMemoryRange>& freeMemoryRanges,
-    const ChunkMemoryRange* rangeToSplit, uint32_t requiredSpace) {
+ChunkMemoryRange VertexPool::splitUpAvailableMemory(std::vector<ChunkMemoryRange> &freeMemoryRanges,
+                                                    const ChunkMemoryRange *rangeToSplit, uint32_t requiredSpace) {
     const ChunkMemoryRange newRange{rangeToSplit->startPos, rangeToSplit->startPos + requiredSpace};
 
     uint32_t remainingSpace = rangeToSplit->endPos - (rangeToSplit->startPos + requiredSpace);
@@ -119,7 +116,8 @@ ChunkMemoryRange VertexPool::splitUpAvailableMemory(std::vector<ChunkMemoryRange
     while (remainingSpace > 0) {
         freeMemoryRanges.push_back({
             nextRangeStartPos,
-            nextRangeStartPos + currentPowerOf2});
+            nextRangeStartPos + currentPowerOf2
+        });
         remainingSpace -= currentPowerOf2;
         nextRangeStartPos += currentPowerOf2;
         currentPowerOf2 *= 2;

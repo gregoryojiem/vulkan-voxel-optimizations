@@ -1,6 +1,4 @@
-#include "InputHandler.h"
-
-#include <iostream>
+#include "InputManager.h"
 
 InputState InputHandler::currentInputs;
 bool InputHandler::mouseLocked = false;

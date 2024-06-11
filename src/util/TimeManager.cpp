@@ -6,8 +6,21 @@
 std::chrono::time_point<std::chrono::high_resolution_clock> TimeManager::lastFrameTime =
     std::chrono::high_resolution_clock::now();
 float TimeManager::deltaTime;
+
 std::map<std::string, std::chrono::time_point<std::chrono::high_resolution_clock>> TimeManager::timers;
 std::map<std::string, TimeProfiler> TimeManager::profilers;
+
+std::vector<float> TimeManager::frameTimes;
+float TimeManager::timeBetweenDisplay = 0.25f;
+float TimeManager::accumulatedTime = 0;
+
+void TimeProfiler::addTime(const float time) {
+    totalTime += time;
+}
+
+float TimeProfiler::getTotalTime() const {
+    return totalTime;
+}
 
 float TimeManager::setDeltaTime() {
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -68,10 +81,23 @@ void TimeManager::printAllProfiling() {
     std::cout << "Total time: " << totalTime << " seconds\n";
 }
 
-void TimeProfiler::addTime(const float time) {
-    totalTime += time;
-}
+float TimeManager::queryFPS() {
+    const float deltaTime = getDeltaTime();
+    frameTimes.push_back(deltaTime);
+    accumulatedTime += deltaTime;
 
-float TimeProfiler::getTotalTime() const {
-    return totalTime;
+    if (accumulatedTime < timeBetweenDisplay) {
+        return -1.0f;
+    }
+
+    accumulatedTime = 0;
+    float totalTime = 0;
+    for (const auto &time: frameTimes) {
+        totalTime += time;
+    }
+
+    const float fps = static_cast<float>(frameTimes.size()) / totalTime;
+    frameTimes.clear();
+    accumulatedTime = 0;
+    return fps;
 }
