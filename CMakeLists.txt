@@ -25,36 +25,41 @@ add_executable(vulkan_voxel
         src/main.cpp
         src/rendering/Vertex.cpp
         src/rendering/Vertex.h
-        src/rendering/camera/Camera.cpp
-        src/rendering/camera/Camera.h
-        src/rendering/GameRenderer.cpp
-        src/rendering/GameRenderer.h
-        src/utility/TimeManager.cpp
-        src/utility/TimeManager.h
-        src/utility/InputHandler.cpp
-        src/utility/InputHandler.h
+        src/rendering/Camera.cpp
+        src/rendering/Camera.h
+        src/rendering/ChunkRenderer.cpp
+        src/rendering/ChunkRenderer.h
+        src/util/TimeManager.cpp
+        src/util/TimeManager.h
+        src/util/InputHandler.cpp
+        src/util/InputHandler.h
         src/game/World.h
         src/game/World.cpp
         src/game/Block.cpp
         src/game/Block.h
         src/game/ChunkManager.cpp
         src/game/ChunkManager.h
-        src/utility/GraphicsUtil.cpp
-        src/utility/GraphicsUtil.h
+        src/util/GraphicsUtil.cpp
+        src/util/GraphicsUtil.h
         src/rendering/VertexPool.cpp
         src/rendering/VertexPool.h
         src/rendering/TextRenderer.cpp
         src/rendering/TextRenderer.h
-        src/utility/TextUtil.cpp
-        src/utility/TextUtil.h
+        src/util/TextUtil.cpp
+        src/util/TextUtil.h
         src/rendering/VulkanUtil.cpp
         src/rendering/VulkanUtil.h
         src/rendering/VulkanDebugger.cpp
         src/rendering/VulkanDebugger.h
-        src/rendering/Swapchain.cpp
-        src/rendering/Swapchain.h
+        src/rendering/SwapChain.cpp
+        src/rendering/SwapChain.h
         src/rendering/VulkanBufferUtil.cpp
         src/rendering/VulkanBufferUtil.h
+        src/rendering/CoreRenderer.cpp
+        src/rendering/CoreRenderer.h
+        src/rendering/MainRenderer.cpp
+        src/rendering/MainRenderer.h
+        src/rendering/VulkanStructs.h
 )
 
 target_link_libraries(vulkan_voxel
