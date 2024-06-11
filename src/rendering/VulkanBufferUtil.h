@@ -8,38 +8,35 @@
 #include "VertexPool.h"
 
 // OBJECT CREATION FUNCTIONS
-extern void createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize size, const VkDevice& device,
-    const VkPhysicalDevice& physDevice, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+extern void createBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize size,
+                         VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
-extern void destroyBuffer(const VkBuffer& buffer, const VkDeviceMemory& bufferMemory, const VkDevice& device);
+extern void destroyBuffer(const VkBuffer &buffer, const VkDeviceMemory &bufferMemory);
 
-template <typename VertexType>
-extern void createVertexBuffer(VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, VkDeviceSize bufferSize,
-const std::vector<VertexType>& vertices, const VkDevice& device, const VkPhysicalDevice& physDevice,
-const VkCommandPool& commandPool, const VkQueue& graphicsQueue);
+template<typename VertexType>
+extern void createVertexBuffer(VkBuffer &vertexBuffer, VkDeviceMemory &vertexBufferMemory, VkDeviceSize bufferSize,
+                               const std::vector<VertexType> &vertices);
 
-extern void createIndexBuffer(VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory, VkDeviceSize bufferSize,
-    const std::vector<uint32_t>& indices, const VkDevice& device, const VkPhysicalDevice& physDevice,
-    const VkCommandPool& commandPool, const VkQueue& graphicsQueue);
+extern void createIndexBuffer(VkBuffer &indexBuffer, VkDeviceMemory &indexBufferMemory, VkDeviceSize bufferSize,
+                              const std::vector<uint32_t> &indices);
 
-extern void createUniformBuffers(std::vector<VkBuffer>& uniformBuffers,
-    std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped,
-    uint32_t maxFramesInFlight, const VkDevice& device, const VkPhysicalDevice& physDevice);
+extern void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
+                                 std::vector<VkDeviceMemory> &uniformBuffersMemory,
+                                 std::vector<void *> &uniformBuffersMapped);
 
 //GENERAL UTILITY FUNCTIONS
-extern void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size, const VkDevice& device,
-    const VkCommandPool& commandPool, const VkQueue& graphicsQueue);
+extern void copyBuffer(VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size);
 
-extern void copyBufferRanges(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer,uint32_t objectSize,
-    std::unordered_map<uint32_t, ChunkMemoryRange>& memoryRanges, const VkDevice& device,
-    const VkCommandPool& commandPool, const VkQueue& graphicsQueue);
+extern void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, uint32_t objectSize,
+                             std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges);
 
-extern void updateBuffer(const VkBuffer& buffer, const VkBuffer& stagingBuffer, const VkDeviceMemory& stagingBufferMemory,
-    void* newData, VkDeviceSize bufferSize, uint32_t objectSize, const VkDevice& device,
-    std::unordered_map<uint32_t, ChunkMemoryRange>& memoryRanges, const VkCommandPool& commandPool,
-    const VkQueue& graphicsQueue);
+extern void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t width, uint32_t height);
 
-extern void copyBufferToImage(const VkBuffer& buffer, const VkImage& image, uint32_t width, uint32_t height,
-    const VkDevice& device, const VkCommandPool& commandPool, const VkQueue& graphicsQueue);
+extern void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer,
+                         const VkDeviceMemory &stagingBufferMemory,
+                         void *newData, VkDeviceSize bufferSize, uint32_t objectSize,
+                         std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges);
+
+extern void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize);
 
 #endif //VULKANBUFFERUTIL_H
