@@ -17,14 +17,15 @@ struct OctreeNode {
 };
 
 struct InternalNode final : OctreeNode {
-    OctreeNode* children[8] = {nullptr};
+    OctreeNode *children[8] = {nullptr};
 
-    explicit InternalNode(const glm::vec3& position);
+    explicit InternalNode(const glm::vec3 &position);
+
     ~InternalNode() override;
 };
 
 struct Chunk {
-    OctreeNode* octree;
+    OctreeNode *octree;
     std::vector<ChunkVertex> vertices;
     std::vector<uint32_t> indices;
     bool geometryModified;
@@ -32,10 +33,13 @@ struct Chunk {
 
     ~Chunk();
 
-    static glm::vec3 alignToChunkPos(const glm::vec3& position);
+    static glm::vec3 alignToChunkPos(const glm::vec3 &position);
+
     static double alignNum(double number);
-    static int getOctantIndex(const glm::vec3& blockPos, const glm::vec3& chunkPos);
-    static void addOctantOffset(glm::vec3& middlePosition, int octantIndex, int depth);
+
+    static int getOctantIndex(const glm::vec3 &blockPos, const glm::vec3 &chunkPos);
+
+    static void addOctantOffset(glm::vec3 &middlePosition, int octantIndex, int depth);
 };
 
 #endif //CHUNK_H

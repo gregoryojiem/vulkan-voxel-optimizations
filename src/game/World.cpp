@@ -2,31 +2,16 @@
 
 #include <iostream>
 #include <sstream>
-#include <cmath>
 
 #include "../util/TimeManager.h"
 #include "../util/TextUtil.h"
 
-World::World() : seed(2) { }
-
-static Block greenBlock = {glm::vec3(0.0f, 0.0f, 0.0f), 0, 150, 0};
-static Block pinkBlock = {glm::vec3(2.0f, 0.0f, 0.0f), 255, 174, 201};
-static Block yellowBlock = {glm::vec3(1.0f, 3.0f, 0.0f), 255, 255, 0};
-
-void World::generateNoisyTerrain(int range) {
-    for (int x = -range; x < range; ++x) {
-        for (int z = -range; z < range; ++z) {
-            float height = 0.5f + rand() % 100 / 100.0f;
-            height += 0.2f * (x / 10.0f) + 0.2f * (z / 10.0f);
-
-            Block block = height > 0.7f ? greenBlock : pinkBlock;
-            block.position = glm::vec3(x, static_cast<int>(height * 5.0f), z);
-            addBlock(block);
-        }
-    }
+World::World() : seed(2) {
 }
 
-uint32_t World::generateTerrainFromNoise(int range) {
+static Block greenBlock = {glm::vec3(0.0f, 0.0f, 0.0f), 0, 150, 0};
+
+uint32_t World::generateTerrainFromNoise(const int range) {
     const int halfRange = range / 2;
     Block terrainBlock = greenBlock;
     uint32_t blocksGenerated = 0;
@@ -36,7 +21,7 @@ uint32_t World::generateTerrainFromNoise(int range) {
             float noiseInfo = noise.GetNoise(static_cast<float>(x), static_cast<float>(z));
             noiseInfo = (noiseInfo + 1) / 2;
 
-            const int height = static_cast<int>(noiseInfo*15);
+            const int height = static_cast<int>(noiseInfo * 15);
 
             for (int y = height; y <= height; y++) {
                 int redBlueColor = (y * 4) / 8 * 8;
@@ -61,7 +46,7 @@ void World::init() {
     //addBlock(yellowBlock);
     //chunkManager.fillChunk(yellowBlock.position, yellowBlock);
 
-    const int range = 1000;
+    constexpr int range = 1000;
     std::cout << "Started generating terrain! ";
 
     TimeManager::startTimer("generateTerrain");
@@ -69,7 +54,7 @@ void World::init() {
     TimeManager::addTimeToProfiler("generateTerrain", TimeManager::finishTimer("generateTerrain"));
 
     std::cout << "There were " << TextUtil::getCommaString(numBlocksGenerated) << " voxels and " <<
-           TextUtil::getCommaString( chunkManager.chunkCount()) << " chunks!\n";
+            TextUtil::getCommaString(chunkManager.chunkCount()) << " chunks!\n";
 
     std::cout << "Started meshing!\n";
 
@@ -81,6 +66,7 @@ void World::init() {
 }
 
 static int test = 0;
+
 void World::mainLoop() {
     test++;
     addBlock({glm::vec3(test, 10, 0), {255, 0, 0}});
