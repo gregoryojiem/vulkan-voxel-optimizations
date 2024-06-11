@@ -318,7 +318,7 @@ void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool 
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    std::vector bindings = {uboLayoutBinding};
+    std::vector<VkDescriptorSetLayoutBinding> bindings{};
 
     if (addSampler) {
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
@@ -327,8 +327,9 @@ void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool 
         samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
         bindings.push_back(samplerLayoutBinding);
+    } else {
+        bindings.push_back(uboLayoutBinding);
     }
 
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
