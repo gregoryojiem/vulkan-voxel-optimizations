@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include "../utility/TimeManager.h"
-
 std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::vector<uint32_t> globalChunkIndices(CHUNK_INDICES_SIZE);
 

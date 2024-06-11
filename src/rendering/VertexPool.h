@@ -1,6 +1,7 @@
 #ifndef VERTEXPOOL_H
 #define VERTEXPOOL_H
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 #include "Vertex.h"

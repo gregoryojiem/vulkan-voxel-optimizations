@@ -5,8 +5,6 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
 
-#include "../game/Block.h"
-
 struct ChunkVertex {
     glm::vec3 pos;
     uint8_t color[4];
