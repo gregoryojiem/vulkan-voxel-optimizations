@@ -35,9 +35,7 @@ void insertBlockIndices(std::vector<uint32_t>& chunkIndices, std::array<bool, 6>
     }
 }
 
-std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4 texQuadBounds,
-    glm::vec2 startPos, float scale) {
-
+std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4 texQuadBounds, glm::vec2 startPos) {
     float left = quadBounds[0];
     float bottom = quadBounds[1];
     float right = quadBounds[2];
@@ -49,22 +47,20 @@ std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4
     float texRight = texQuadBounds[2];
     float texBottom = texQuadBounds[3];
 
-    float adjScale = scale;
-
     return{
-        {{startPos.x + left * adjScale, startPos.y + bottom * adjScale},
+        {{startPos.x + left, startPos.y - bottom},
             {1.0f, 0.0f, 0.0f},
             {texLeft, texTop}},
 
-        {{startPos.x + right * adjScale, startPos.y + bottom * adjScale},
+        {{startPos.x + right, startPos.y - bottom},
             {0.0f, 1.0f, 0.0f},
             {texRight, texTop}},
 
-        {{startPos.x + right * adjScale, startPos.y + top * adjScale},
+        {{startPos.x + right, startPos.y - top},
             {0.0f, 0.0f, 1.0f},
             {texRight, texBottom}},
 
-        {{startPos.x + left * adjScale, startPos.y + top * adjScale},
+        {{startPos.x + left, startPos.y - top},
             {1.0f, 1.0f, 1.0f},
             {texLeft, texBottom}}
     };
@@ -73,6 +69,6 @@ std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4
 std::vector<uint32_t> generateTexturedQuadIndices(uint32_t startIndex) {
     return {
         startIndex + 0, startIndex + 1, startIndex + 2,
-        startIndex + 2, startIndex + 3, startIndex + 0
+        startIndex + 3, startIndex + 0, startIndex + 2
     };;
 }
