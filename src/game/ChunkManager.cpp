@@ -5,56 +5,10 @@
 #include <glm/common.hpp>
 
 #include "../rendering/VertexPool.h"
-#include "../utility/GraphicsUtil.h"
-#include "../utility/TimeManager.h"
+#include "../util/GraphicsUtil.h"
+#include "../util/TimeManager.h"
 #include "../rendering/Vertex.h"
 
-OctreeNode::~OctreeNode() = default;
-
-InternalNode::InternalNode(const glm::vec3& position) {
-    for (auto& i : children) {
-        i = nullptr;
-    }
-    block = Block(position);
-}
-
-InternalNode::~InternalNode() {
-    for (const auto& i : children) {
-        delete i;
-    }
-}
-
-Chunk::~Chunk() {
-    delete octree;
-}
-
-glm::vec3 Chunk::alignToChunkPos(const glm::vec3& position) {
-    return {alignNum(position.x), alignNum(position.y), alignNum(position.z)};
-}
-
-double Chunk::alignNum(const double number) {
-    return round((number - chunkShift) / 8) * 8 + chunkShift;
-}
-
-int Chunk::getOctantIndex(const glm::vec3& blockPos, const glm::vec3& chunkPos) {
-    int childIndex = 0;
-    if (blockPos.x >= chunkPos.x) childIndex |= 1;
-    if (blockPos.y >= chunkPos.y) childIndex |= 2;
-    if (blockPos.z >= chunkPos.z) childIndex |= 4;
-    return childIndex;
-}
-
-void Chunk::addOctantOffset(glm::vec3& middlePosition, int octantIndex, int depth) {
-    const float xSign = octantIndex & 1 ? 1 : -1;
-    const float ySign = octantIndex & 2 ? 1 : -1;
-    const float zSign = octantIndex & 4 ? 1 : -1;
-
-    middlePosition.x += xSign * subIncrements[depth];
-    middlePosition.y += subIncrements[depth] * ySign;
-    middlePosition.z += subIncrements[depth] * zSign;
-}
-
-//ChunkManager static variables
 uint32_t ChunkManager::currentID = 1;
 
 Chunk* ChunkManager::getChunk(const glm::vec3& worldPos) {
@@ -66,7 +20,7 @@ Chunk* ChunkManager::getChunk(const glm::vec3& worldPos) {
 }
 
 void ChunkManager::createChunk(const glm::vec3& worldPos) {
-    glm::vec3 normalizedChunkPos = (worldPos - chunkShift) / chunkSize;
+    glm::vec3 normalizedChunkPos = (worldPos - CHUNK_SHIFT) / CHUNK_SIZE;
 
     if (std::floor(normalizedChunkPos.x) != normalizedChunkPos.x ||
         std::floor(normalizedChunkPos.y) != normalizedChunkPos.y ||
@@ -89,15 +43,15 @@ void ChunkManager::meshChunk(Chunk& chunk) {
     chunk.indices = { };
     std::array<bool, 6> facesToDraw{};
 
-    for (auto& topNode : dynamic_cast<InternalNode*>(chunk.octree)->children) {
+    for (const auto& topNode : dynamic_cast<InternalNode*>(chunk.octree)->children) {
         if (topNode == nullptr) {
             continue;
         }
-        for (auto& middleNode : dynamic_cast<InternalNode*>(topNode)->children) {
+        for (const auto& middleNode : dynamic_cast<InternalNode*>(topNode)->children) {
             if (middleNode == nullptr) {
                 continue;
             }
-            for (auto blockNode : dynamic_cast<InternalNode*>(middleNode)->children) {
+            for (const auto blockNode : dynamic_cast<InternalNode*>(middleNode)->children) {
                 if (blockNode != nullptr) {
                     generateBlockMesh(chunk, blockNode->block, facesToDraw);
                 }
@@ -139,7 +93,7 @@ void ChunkManager::generateBlockMesh(Chunk& chunk, Block& block, std::array<bool
 
     if (faceCount > 0) {
         insertBlockIndices(chunk.indices, facesToDraw, chunk.vertices.size());
-        insertBlockVertices(chunk.vertices, facesToDraw, block);
+        insertBlockVertices(chunk.vertices, facesToDraw, block.position, block.color);
     }
 }
 
@@ -163,16 +117,16 @@ OctreeNode* ChunkManager::createPathToBlock(const Chunk* chunk, const Block& blo
     OctreeNode* newBlockNode = nullptr;
     int depth = 0;
 
-    while (depth < maxDepth) {
+    while (depth < MAX_DEPTH) {
         const int octantIndex = Chunk::getOctantIndex(block.position, currentNode->block.position);
 
-        if (depth < maxDepth - 1 && currentNode->children[octantIndex] != nullptr) {
+        if (depth < MAX_DEPTH - 1 && currentNode->children[octantIndex] != nullptr) {
             currentNode = dynamic_cast<InternalNode*>(currentNode->children[octantIndex]);
             depth++;
             continue;
         }
 
-        if (depth == maxDepth && currentNode->children[octantIndex] != nullptr) {
+        if (depth == MAX_DEPTH && currentNode->children[octantIndex] != nullptr) {
             newBlockNode = currentNode->children[octantIndex];
             break;
         }
@@ -180,7 +134,7 @@ OctreeNode* ChunkManager::createPathToBlock(const Chunk* chunk, const Block& blo
         glm::vec3 childPos = currentNode->block.position;
         Chunk::addOctantOffset(childPos, octantIndex, depth);
 
-        if (depth < maxDepth - 1) {
+        if (depth < MAX_DEPTH - 1) {
             currentNode->children[octantIndex] = new InternalNode(childPos);
             currentNode = dynamic_cast<InternalNode*>(currentNode->children[octantIndex]);
         }
@@ -235,7 +189,6 @@ void ChunkManager::fillChunk(const glm::vec3 &worldPos, Block block) {
 
     if (const Chunk* chunk = getChunk(chunkCenter); chunk == nullptr) {
         createChunk(chunkCenter);
-        chunk = getChunk(chunkCenter);
     }
 
     const glm::vec3 chunkCorner = chunkCenter - 3.5f;
@@ -261,7 +214,7 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
     auto* currentNode = dynamic_cast<InternalNode*>(chunk->octree);
 
     int depth = 0;
-    while (depth < maxDepth) {
+    while (depth < MAX_DEPTH) {
         int childIndex = 0;
         if (worldPos.x >= currentNode->block.position.x) childIndex |= 1;
         if (worldPos.y >= currentNode->block.position.y) childIndex |= 2;
@@ -271,7 +224,7 @@ OctreeNode* ChunkManager::findOctreeNode(const glm::vec3& worldPos) {
             return nullptr;
         }
 
-        if (depth == maxDepth - 1) {
+        if (depth == MAX_DEPTH - 1) {
             return currentNode->children[childIndex];
         }
 
@@ -291,7 +244,7 @@ void ChunkManager::meshAllChunks() {
 
             TimeManager::startTimer("addToVertexPool");
             if (!chunk.vertices.empty()) {
-                VertexPool::addToVertexPool(chunk);
+                VertexPool::addToVertexPool(chunk.vertices, chunk.indices, chunk.ID);
             }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
         }

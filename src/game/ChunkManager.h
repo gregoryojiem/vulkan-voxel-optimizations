@@ -1,5 +1,5 @@
-#ifndef CHUNK_H
-#define CHUNK_H
+#ifndef CHUNKMANAGER_H
+#define CHUNKMANAGER_H
 
 #include <unordered_map>
 #include <vector>
@@ -7,40 +7,7 @@
 #include <glm/glm.hpp>
 
 #include "Block.h"
-#include "../rendering/Vertex.h"
-
-static glm::vec3 chunkSize = glm::vec3(8.0f);
-static std::vector<float> subIncrements = { 2.0f, 1.0, 0.5 };
-static float chunkShift = 3.5;
-static int maxDepth = 3;
-
-struct OctreeNode {
-    Block block{};
-
-    virtual ~OctreeNode();
-};
-
-struct InternalNode final : OctreeNode {
-    OctreeNode* children[8] = {nullptr};
-
-    explicit InternalNode(const glm::vec3& position);
-    ~InternalNode() override;
-};
-
-struct Chunk {
-    OctreeNode* octree;
-    std::vector<ChunkVertex> vertices;
-    std::vector<uint32_t> indices;
-    bool geometryModified;
-    uint32_t ID;
-
-    ~Chunk();
-
-    static glm::vec3 alignToChunkPos(const glm::vec3& position);
-    static double alignNum(double number);
-    static int getOctantIndex(const glm::vec3& blockPos, const glm::vec3& chunkPos);
-    static void addOctantOffset(glm::vec3& middlePosition, int octantIndex, int depth);
-};
+#include "Chunk.h"
 
 // hash function for vec3s so they can be used in the unordered map of ChunkManager
 template<>
@@ -65,7 +32,8 @@ public:
     uint32_t chunkCount() const;
 
     void addBlock(const Block& block);
-    OctreeNode* createPathToBlock(const Chunk* chunk, const Block& block);
+
+    static OctreeNode* createPathToBlock(const Chunk* chunk, const Block& block);
     Block getBlock(const glm::vec3& worldPos);
     bool hasBlock(const glm::vec3& worldPos);
     void removeBlock(const glm::vec3& worldPos);
@@ -75,4 +43,4 @@ private:
     OctreeNode* findOctreeNode(const glm::vec3& worldPos);
 };
 
-#endif //CHUNK_H
+#endif //CHUNKMANAGER_H

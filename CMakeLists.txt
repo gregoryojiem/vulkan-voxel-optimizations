@@ -60,6 +60,8 @@ add_executable(vulkan_voxel
         src/rendering/MainRenderer.cpp
         src/rendering/MainRenderer.h
         src/rendering/VulkanStructs.h
+        src/game/Chunk.cpp
+        src/game/Chunk.h
 )
 
 target_link_libraries(vulkan_voxel

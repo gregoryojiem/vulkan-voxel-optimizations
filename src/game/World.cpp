@@ -4,9 +4,8 @@
 #include <sstream>
 #include <cmath>
 
-#include "../rendering/Vertex.h"
-#include "../utility/TimeManager.h"
-#include "../utility/TextUtil.h"
+#include "../util/TimeManager.h"
+#include "../util/TextUtil.h"
 
 World::World() : seed(2) { }
 
@@ -81,8 +80,11 @@ void World::init() {
     TimeManager::printAllProfiling();
 }
 
+static int test = 0;
 void World::mainLoop() {
-
+    test++;
+    addBlock({glm::vec3(test, 10, 0), {255, 0, 0}});
+    chunkManager.meshAllChunks();
 }
 
 void World::addBlock(const Block block) {
