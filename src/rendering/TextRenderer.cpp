@@ -4,8 +4,8 @@
 #include <iostream>
 #include <filesystem>
 
-#include "VulkanBufferUtil.h"
-#include "VulkanUtil.h"
+#include "vulkan/VulkanBufferUtil.h"
+#include "vulkan/VulkanUtil.h"
 #include "../util/GraphicsUtil.h"
 
 const std::string TextRenderer::fontPath = "../resources/fonts";

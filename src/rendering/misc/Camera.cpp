@@ -7,7 +7,8 @@
 #include <../../dependencies/glm-1.0.1/glm/glm.hpp>
 #include <../../dependencies/glm-1.0.1/glm/gtc/matrix_transform.hpp>
 
-#include "../util/InputHandler.h"
+#include "../../util/InputManager.h"
+#include "../vulkan/VulkanStructs.h"
 
 UniformBufferObject Camera::ubo;
 

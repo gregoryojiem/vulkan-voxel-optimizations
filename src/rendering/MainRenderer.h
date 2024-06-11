@@ -3,7 +3,7 @@
 #include "CoreRenderer.h"
 #include "ChunkRenderer.h"
 #include "TextRenderer.h"
-#include "Camera.h"
+#include "misc/Camera.h"
 
 class MainRenderer {
 public:

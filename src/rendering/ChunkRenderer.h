@@ -4,7 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <vector>
 
-#include "VulkanStructs.h"
+#include "vulkan/VulkanStructs.h"
 
 
 class ChunkRenderer {

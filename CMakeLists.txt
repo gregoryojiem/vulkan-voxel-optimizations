@@ -23,16 +23,16 @@ set_target_properties(glfw PROPERTIES
 
 add_executable(vulkan_voxel
         src/main.cpp
-        src/rendering/Vertex.cpp
-        src/rendering/Vertex.h
-        src/rendering/Camera.cpp
-        src/rendering/Camera.h
+        src/rendering/misc/Vertex.cpp
+        src/rendering/misc/Vertex.h
+        src/rendering/misc/Camera.cpp
+        src/rendering/misc/Camera.h
         src/rendering/ChunkRenderer.cpp
         src/rendering/ChunkRenderer.h
         src/util/TimeManager.cpp
         src/util/TimeManager.h
-        src/util/InputHandler.cpp
-        src/util/InputHandler.h
+        src/util/InputManager.cpp
+        src/util/InputManager.h
         src/game/World.h
         src/game/World.cpp
         src/game/Block.cpp
@@ -41,25 +41,25 @@ add_executable(vulkan_voxel
         src/game/ChunkManager.h
         src/util/GraphicsUtil.cpp
         src/util/GraphicsUtil.h
-        src/rendering/VertexPool.cpp
-        src/rendering/VertexPool.h
+        src/rendering/misc/VertexPool.cpp
+        src/rendering/misc/VertexPool.h
         src/rendering/TextRenderer.cpp
         src/rendering/TextRenderer.h
         src/util/TextUtil.cpp
         src/util/TextUtil.h
-        src/rendering/VulkanUtil.cpp
-        src/rendering/VulkanUtil.h
-        src/rendering/VulkanDebugger.cpp
-        src/rendering/VulkanDebugger.h
-        src/rendering/SwapChain.cpp
-        src/rendering/SwapChain.h
-        src/rendering/VulkanBufferUtil.cpp
-        src/rendering/VulkanBufferUtil.h
+        src/rendering/vulkan/VulkanUtil.cpp
+        src/rendering/vulkan/VulkanUtil.h
+        src/rendering/vulkan/VulkanDebugger.cpp
+        src/rendering/vulkan/VulkanDebugger.h
+        src/rendering/vulkan/SwapChain.cpp
+        src/rendering/vulkan/SwapChain.h
+        src/rendering/vulkan/VulkanBufferUtil.cpp
+        src/rendering/vulkan/VulkanBufferUtil.h
         src/rendering/CoreRenderer.cpp
         src/rendering/CoreRenderer.h
         src/rendering/MainRenderer.cpp
         src/rendering/MainRenderer.h
-        src/rendering/VulkanStructs.h
+        src/rendering/vulkan/VulkanStructs.h
         src/game/Chunk.cpp
         src/game/Chunk.h
 )

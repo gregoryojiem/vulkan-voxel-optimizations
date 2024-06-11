@@ -4,7 +4,7 @@
 #include <stb_image.h>
 #include <stdexcept>
 
-#include "CoreRenderer.h"
+#include "../CoreRenderer.h"
 #include "VulkanUtil.h"
 
 // OBJECT CREATION FUNCTIONS

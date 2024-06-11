@@ -1,6 +1,6 @@
 #include "MainRenderer.h"
 
-#include "VulkanDebugger.h"
+#include "vulkan/VulkanDebugger.h"
 #include "../util/TimeManager.h"
 
 void MainRenderer::init() {

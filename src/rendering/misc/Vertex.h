@@ -2,7 +2,7 @@
 #define VERTEX_H
 
 #include <vector>
-#include <glm/glm.hpp>
+#include <../../../dependencies/glm-1.0.1/glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
 
 struct ChunkVertex {

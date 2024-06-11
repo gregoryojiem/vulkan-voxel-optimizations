@@ -6,7 +6,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "VertexPool.h"
+#include "../misc/VertexPool.h"
 
 // OBJECT CREATION FUNCTIONS
 static void createBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize size,

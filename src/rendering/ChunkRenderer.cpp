@@ -5,9 +5,9 @@
 #include <cstdint>
 #include <fstream>
 
-#include "VulkanBufferUtil.h"
-#include "VulkanUtil.h"
-#include "VertexPool.h"
+#include "vulkan/VulkanBufferUtil.h"
+#include "vulkan/VulkanUtil.h"
+#include "misc/VertexPool.h"
 
 void ChunkRenderer::init() {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);

@@ -6,7 +6,7 @@
 #include <fstream>
 #include <set>
 
-#include "CoreRenderer.h"
+#include "../CoreRenderer.h"
 #include "VulkanDebugger.h"
 
 // VULKAN CORE CREATION FUNCTIONS (these are dependency free)

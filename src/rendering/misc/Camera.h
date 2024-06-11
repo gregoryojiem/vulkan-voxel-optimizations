@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "VulkanStructs.h"
+#include "../vulkan/VulkanStructs.h"
 #include "GLFW/glfw3.h"
 
 class Camera {

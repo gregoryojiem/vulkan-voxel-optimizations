@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 
-#include "Swapchain.h"
+#include "vulkan/Swapchain.h"
 
 extern int DEFAULT_WIDTH;
 extern int DEFAULT_HEIGHT;

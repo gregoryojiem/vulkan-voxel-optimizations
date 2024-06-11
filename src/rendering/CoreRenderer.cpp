@@ -3,7 +3,7 @@
 #include <array>
 #include <stdexcept>
 
-#include "VulkanUtil.h"
+#include "vulkan/VulkanUtil.h"
 
 int DEFAULT_WIDTH = 1280;
 int DEFAULT_HEIGHT = 720;

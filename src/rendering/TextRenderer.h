@@ -2,10 +2,10 @@
 #define TEXTRENDERER_H
 
 #include <map>
-#include <glm/vec2.hpp>
+#include <../../../dependencies/glm-1.0.1/glm/vec2.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "Vertex.h"
+#include "misc/Vertex.h"
 
 struct Character {
     glm::vec4 planeQuad; //in the form of left, bottom, right top, with left bottom being on the baseline
