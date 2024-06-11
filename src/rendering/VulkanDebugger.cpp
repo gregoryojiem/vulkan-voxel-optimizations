@@ -21,8 +21,10 @@ void VulkanDebugger::init(VkDebugUtilsMessengerCreateInfoEXT& debugCreateInfo) {
     populateDebugMessengerCreateInfo(debugCreateInfo);
 }
 
-void VulkanDebugger::cleanup(VkInstance& instance) {
-    DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+void VulkanDebugger::cleanup(const VkInstance& instance) {
+    if (enabled()) {
+        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    }
 }
 
 void VulkanDebugger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {

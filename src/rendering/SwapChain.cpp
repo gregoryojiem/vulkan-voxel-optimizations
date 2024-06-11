@@ -2,11 +2,11 @@
 #include <stdexcept>
 #include <limits>
 
-#include "Swapchain.h"
+#include "SwapChain.h"
 #include "VulkanUtil.h"
 
-void SwapChain::init(GLFWwindow* window, const VkDevice& device, const VkPhysicalDevice& physicalDevice,
-    const VkSurfaceKHR& surface) {
+void SwapChain::init(GLFWwindow *window, const VkDevice &device, const VkPhysicalDevice &physicalDevice,
+                     const VkSurfaceKHR &surface) {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -66,7 +66,7 @@ VkSurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(const std::vector<VkSurfac
         if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace ==
             VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             return availableFormat;
-            }
+        }
     }
 
     return availableFormats[0];
@@ -103,7 +103,7 @@ VkExtent2D SwapChain::chooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabi
     return actualExtent;
 }
 
-void SwapChain::createImageViews(const VkDevice& device) {
+void SwapChain::createImageViews(const VkDevice &device) {
     swapChainImageViews.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
@@ -114,7 +114,7 @@ void SwapChain::createImageViews(const VkDevice& device) {
     }
 }
 
-void SwapChain::createDepthResources(const VkDevice& device, const VkPhysicalDevice& physDevice) {
+void SwapChain::createDepthResources(const VkDevice &device, const VkPhysicalDevice &physDevice) {
     VkFormat depthFormat = findDepthFormat(physDevice);
     createImage(depthImage, depthImageMemory, device, physDevice, getWidth(),
                 getHeight(),
@@ -124,7 +124,7 @@ void SwapChain::createDepthResources(const VkDevice& device, const VkPhysicalDev
     depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, device);
 }
 
-void SwapChain::createFramebuffers(const VkDevice& device, const VkRenderPass& renderPass) {
+void SwapChain::createFramebuffers(const VkDevice &device, const VkRenderPass &renderPass) {
     swapChainFramebuffers.resize(swapChainImageViews.size());
 
     for (size_t i = 0; i < swapChainImageViews.size(); i++) {
@@ -148,8 +148,8 @@ void SwapChain::createFramebuffers(const VkDevice& device, const VkRenderPass& r
     }
 }
 
-void SwapChain::recreate(GLFWwindow* window, const VkDevice& device, const VkPhysicalDevice& physicalDevice,
-    const VkSurfaceKHR& surface, const VkRenderPass& renderPass) {
+void SwapChain::recreate(GLFWwindow *window, const VkDevice &device, const VkPhysicalDevice &physicalDevice,
+                         const VkSurfaceKHR &surface, const VkRenderPass &renderPass) {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
 
@@ -167,7 +167,7 @@ void SwapChain::recreate(GLFWwindow* window, const VkDevice& device, const VkPhy
     createFramebuffers(device, renderPass);
 }
 
-void SwapChain::cleanup(const VkDevice& device) {
+void SwapChain::cleanup(const VkDevice &device) {
     vkDestroyImageView(device, depthImageView, nullptr);
     vkDestroyImage(device, depthImage, nullptr);
     vkFreeMemory(device, depthImageMemory, nullptr);
@@ -183,11 +183,11 @@ void SwapChain::cleanup(const VkDevice& device) {
     vkDestroySwapchainKHR(device, vkSwapChain, nullptr);
 }
 
-VkSwapchainKHR& SwapChain::getSwapChain() {
+VkSwapchainKHR &SwapChain::getSwapChain() {
     return vkSwapChain;
 }
 
-std::vector<VkFramebuffer>& SwapChain::getFramebuffers() {
+std::vector<VkFramebuffer> &SwapChain::getFramebuffers() {
     return swapChainFramebuffers;
 }
 
