@@ -8,7 +8,7 @@
 #include "VertexPool.h"
 
 // OBJECT CREATION FUNCTIONS
-extern void createBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize size,
+static void createBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize size,
                          VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
 extern void destroyBuffer(const VkBuffer &buffer, const VkDeviceMemory &bufferMemory);
@@ -19,6 +19,10 @@ extern void createVertexBuffer(VkBuffer &vertexBuffer, VkDeviceMemory &vertexBuf
 
 extern void createIndexBuffer(VkBuffer &indexBuffer, VkDeviceMemory &indexBufferMemory, VkDeviceSize bufferSize,
                               const std::vector<uint32_t> &indices);
+
+extern void createStagingBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize);
+
+extern void createIndirectBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize);
 
 extern void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
                                  std::vector<VkDeviceMemory> &uniformBuffersMemory,

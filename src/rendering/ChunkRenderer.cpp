@@ -25,12 +25,8 @@ void ChunkRenderer::init() {
     indexMemorySize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
     createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
     createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
-    createBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize,
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    createBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize,
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    createStagingBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize);
+    createStagingBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize);
 }
 
 void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject& ubo) {
@@ -60,22 +56,16 @@ void ChunkRenderer::resizeBuffers() {
     if (verticesSize > vertexMemorySize) {
         vertexMemorySize = verticesSize;
         createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
-        createBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize,
-                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        createStagingBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize);
     }
     if (indicesSize > indexMemorySize) {
         indexMemorySize = indicesSize;
         createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
-        createBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize,
-                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        createStagingBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize);
     }
     if (drawParamsSize > drawParamsMemorySize) {
         drawParamsMemorySize = drawParamsSize;
-        createBuffer(drawParamsBuffer, drawParamsBufferMemory, drawParamsSize,
-                     VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        createIndirectBuffer(drawParamsBuffer, drawParamsBufferMemory, drawParamsSize);
     }
 }
 
