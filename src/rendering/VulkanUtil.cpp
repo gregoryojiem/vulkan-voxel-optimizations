@@ -141,8 +141,7 @@ void createLogicalDevice(VkDevice &device, VkQueue &graphicsQueue, VkQueue &pres
 }
 
 // VULKAN GENERAL CREATION FUNCTIONS (these rely on CoreRenderer)
-VkImageView createImageView(const VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags,
-                            const VkDevice &device) {
+VkImageView createImageView(const VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
@@ -159,15 +158,15 @@ VkImageView createImageView(const VkImage &image, VkFormat format, VkImageAspect
     viewInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
-    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+    if (vkCreateImageView(CoreRenderer::device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture image view!");
     }
 
     return imageView;
 }
 
-VkImageView createTextureImageView(const VkImage &textureImage, const VkDevice &device) {
-    return createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, device);
+VkImageView createTextureImageView(const VkImage &textureImage) {
+    return createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void createImage(VkImage &image, VkDeviceMemory &imageMemory, const VkDevice &device,
@@ -208,7 +207,7 @@ void createImage(VkImage &image, VkDeviceMemory &imageMemory, const VkDevice &de
     vkBindImageMemory(device, image, imageMemory, 0);
 }
 
-void createTextureSampler(VkSampler &textureSampler, const VkDevice &device, const VkPhysicalDevice &physDevice) {
+void createTextureSampler(VkSampler &textureSampler) {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -227,10 +226,10 @@ void createTextureSampler(VkSampler &textureSampler, const VkDevice &device, con
     samplerInfo.maxLod = 0.0f;
 
     VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(physDevice, &properties);
+    vkGetPhysicalDeviceProperties(CoreRenderer::physicalDevice, &properties);
     samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+    if (vkCreateSampler(CoreRenderer::device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
@@ -341,9 +340,9 @@ void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool 
     }
 }
 
-void createDescriptorPool(VkDescriptorPool &descriptorPool) {
+void createDescriptorPool(VkDescriptorPool &descriptorPool, VkDescriptorType type) {
     VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.type = type;
     poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -357,9 +356,9 @@ void createDescriptorPool(VkDescriptorPool &descriptorPool) {
     }
 }
 
-void createDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
-                          const VkDescriptorSetLayout &descriptorSetLayout,
-                          const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers) {
+void createDescriptorSetsUB(std::vector<VkDescriptorSet> &descriptorSets,
+                            const VkDescriptorSetLayout &descriptorSetLayout,
+                            const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers) {
     std::vector layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -368,7 +367,6 @@ void createDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
     allocInfo.pSetLayouts = layouts.data();
 
     descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
     if (vkAllocateDescriptorSets(CoreRenderer::device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
@@ -387,8 +385,41 @@ void createDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrite.descriptorCount = 1;
         descriptorWrite.pBufferInfo = &bufferInfo;
-        descriptorWrite.pImageInfo = nullptr; // Optional
-        descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+        vkUpdateDescriptorSets(CoreRenderer::device, 1, &descriptorWrite, 0, nullptr);
+    }
+}
+
+void createDescriptorSetsSampler(std::vector<VkDescriptorSet> &descriptorSets,
+                                 const VkDescriptorSetLayout &descriptorSetLayout,
+                                 const VkDescriptorPool &descriptorPool,
+                                 const VkImageView &imageView, const VkSampler &sampler) {
+    std::vector layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+    allocInfo.pSetLayouts = layouts.data();
+
+    descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+    if (vkAllocateDescriptorSets(CoreRenderer::device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = imageView;
+        imageInfo.sampler = sampler;
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = descriptorSets[i];
+        descriptorWrite.dstBinding = 1;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(CoreRenderer::device, 1, &descriptorWrite, 0, nullptr);
     }
@@ -646,8 +677,7 @@ void endSingleTimeCommands(const VkCommandBuffer &commandBuffer) {
     vkFreeCommandBuffers(CoreRenderer::device, CoreRenderer::commandPool, 1, &commandBuffer);
 }
 
-void transitionImageLayout(const VkImage &image, const VkImageLayout oldLayout, const VkImageLayout newLayout,
-                           const VkDevice &device, const VkCommandPool &commandPool, const VkQueue &graphicsQueue) {
+void transitionImageLayout(const VkImage &image, const VkImageLayout oldLayout, const VkImageLayout newLayout) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkImageMemoryBarrier barrier{};
@@ -858,4 +888,13 @@ std::vector<char> readFile(const std::string &filename) {
 
 bool QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
+}
+
+//GETTERS
+uint32_t getWindowWidth() {
+    return CoreRenderer::getWindowWidth();
+}
+
+uint32_t getWindowHeight() {
+    return CoreRenderer::getWindowHeight();
 }

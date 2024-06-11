@@ -1,7 +1,6 @@
 #ifndef VULKANUTIL_H
 #define VULKANUTIL_H
 
-#include <optional>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -23,12 +22,11 @@ extern void createLogicalDevice(VkDevice &device, VkQueue &graphicsQueue, VkQueu
                                 const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface,
                                 std::vector<const char *> &deviceExtensions);
 
-extern VkImageView createImageView(const VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags,
-                                   const VkDevice &device);
+extern VkImageView createImageView(const VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags);
 
-extern VkImageView createTextureImageView(const VkImage &textureImage, const VkDevice &device);
+extern VkImageView createTextureImageView(const VkImage &textureImage);
 
-extern void createTextureSampler(VkSampler &textureSampler, const VkDevice &device, const VkPhysicalDevice &physDevice);
+extern void createTextureSampler(VkSampler &textureSampler);
 
 extern void createImage(VkImage &image, VkDeviceMemory &imageMemory, const VkDevice &device,
                         const VkPhysicalDevice &physDevice,
@@ -43,11 +41,16 @@ extern void createCommandPool(VkCommandPool &commandPool);
 extern void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout,
                                       bool addSampler);
 
-extern void createDescriptorPool(VkDescriptorPool &descriptorPool);
+extern void createDescriptorPool(VkDescriptorPool &descriptorPool, VkDescriptorType type);
 
-extern void createDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
+extern void createDescriptorSetsUB(std::vector<VkDescriptorSet> &descriptorSets,
+                                   const VkDescriptorSetLayout &descriptorSetLayout,
+                                   const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers);
+
+void createDescriptorSetsSampler(std::vector<VkDescriptorSet> &descriptorSets,
                                  const VkDescriptorSetLayout &descriptorSetLayout,
-                                 const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers);
+                                 const VkDescriptorPool &descriptorPool,
+                                 const VkImageView &imageView, const VkSampler &sampler);
 
 extern void createGraphicsPipeline(VkPipelineLayout &pipelineLayout, VkPipeline &graphicsPipeline,
                                    const std::string &vertShaderCode, const std::string &fragShaderCode,
@@ -70,9 +73,7 @@ extern VkCommandBuffer beginSingleTimeCommands();
 extern void endSingleTimeCommands(
     const VkCommandBuffer &commandBuffer);
 
-extern void transitionImageLayout(const VkImage &image, const VkImageLayout oldLayout, const VkImageLayout newLayout,
-                                  const VkDevice &device, const VkCommandPool &commandPool,
-                                  const VkQueue &graphicsQueue);
+extern void transitionImageLayout(const VkImage &image, const VkImageLayout oldLayout, const VkImageLayout newLayout);
 
 // SUPPORT/QUERY FUNCTIONS
 extern QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface);
@@ -96,5 +97,10 @@ static bool checkDeviceExtensionSupport(const VkPhysicalDevice &physDevice,
                                         std::vector<const char *> &deviceExtensions);
 
 static std::vector<char> readFile(const std::string &filename);
+
+//GETTERS
+extern uint32_t getWindowWidth();
+
+extern uint32_t getWindowHeight();
 
 #endif //VULKANUTIL_H

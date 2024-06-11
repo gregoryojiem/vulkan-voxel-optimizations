@@ -1,5 +1,7 @@
 #include "VulkanBufferUtil.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include <stdexcept>
 
 #include "CoreRenderer.h"
@@ -95,14 +97,14 @@ void createIndexBuffer(VkBuffer &indexBuffer, VkDeviceMemory &indexBufferMemory,
 
 void createStagingBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize) {
     createBuffer(buffer, bufferMemory, bufferSize,
-             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
 void createIndirectBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize) {
     createBuffer(buffer, bufferMemory, bufferSize,
-                     VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                 VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
 void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
@@ -121,8 +123,36 @@ void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
     }
 }
 
+void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int &width, int &height,
+                               const std::string &path) {
+    int channels;
+    stbi_uc *pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    uint32_t imageSize = width * height * 4;
+
+    VkBuffer stagingBuffer{};
+    VkDeviceMemory stagingBufferMemory{};
+    createStagingBuffer(stagingBuffer, stagingBufferMemory, imageSize);
+
+    void *data;
+    vkMapMemory(CoreRenderer::device, stagingBufferMemory, 0, imageSize, 0, &data);
+    memcpy(data, pixels, imageSize);
+    vkUnmapMemory(CoreRenderer::device, stagingBufferMemory);
+
+    createImage(image, imageMemory, CoreRenderer::device, CoreRenderer::physicalDevice,
+                width,
+                height,
+                VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    copyBufferToImage(stagingBuffer, image, width, height);
+    transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    destroyBuffer(stagingBuffer, stagingBufferMemory);
+}
+
 //GENERAL UTILITY FUNCTIONS
-void copyBuffer(VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size) {
+void copyBuffer(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, VkDeviceSize size) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferCopy copyRegion{};
@@ -182,8 +212,17 @@ void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t wi
 }
 
 void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, const VkDeviceMemory &stagingBufferMemory,
-                  void *newData, VkDeviceSize bufferSize, uint32_t objectSize,
-                  std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges) {
+                  void *newData, VkDeviceSize bufferSize) {
+    void *data;
+    vkMapMemory(CoreRenderer::device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, newData, bufferSize);
+    vkUnmapMemory(CoreRenderer::device, stagingBufferMemory);
+    copyBuffer(stagingBuffer, buffer, bufferSize);
+}
+
+void updateChunkBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, const VkDeviceMemory &stagingBufferMemory,
+                       void *newData, VkDeviceSize bufferSize, uint32_t objectSize,
+                       std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges) {
     void *data;
     vkMapMemory(CoreRenderer::device, stagingBufferMemory, 0, bufferSize, 0, &data);
 
@@ -199,11 +238,9 @@ void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, const V
     }
 
     vkUnmapMemory(CoreRenderer::device, stagingBufferMemory);
-
     if (!regionUpdateFound) {
         return;
     }
-
     copyBufferRanges(stagingBuffer, buffer, objectSize, memoryRanges);
 }
 
@@ -223,11 +260,9 @@ void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize buf
         command.firstIndex = memoryRange.startPos;
         command.vertexOffset = static_cast<int32_t>(memoryRange.offset);
         command.firstInstance = 0;
-
         memcpy(static_cast<char *>(data) + commandIndex * sizeof(VkDrawIndexedIndirectCommand),
                &command,
                sizeof(VkDrawIndexedIndirectCommand));
-
         commandIndex++;
     }
 
