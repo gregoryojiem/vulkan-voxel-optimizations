@@ -8,9 +8,11 @@ class Camera {
 public:
     static UniformBufferObject ubo;
 
-    void init(GLFWwindow * window, uint32_t width, uint32_t height);
+    void init(GLFWwindow *window, uint32_t width, uint32_t height);
+
     void update(float deltaTime);
-    void updateProj(uint32_t width, uint32_t height);
+
+    void updateProj(uint32_t width, uint32_t height) const;
 
 private:
     glm::vec3 position{};
@@ -23,7 +25,6 @@ private:
     float movementSpeed{};
     float horzMouseSens{};
     float vertMouseSens{};
-    float textScale{};
 };
 
 #endif //CAMERA_H

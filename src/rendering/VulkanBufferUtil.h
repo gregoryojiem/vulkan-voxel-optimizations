@@ -41,7 +41,7 @@ extern void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffe
 extern void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t width, uint32_t height);
 
 extern void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer,
-                         const VkDeviceMemory &stagingBufferMemory, void *newData, VkDeviceSize bufferSize);
+                         const VkDeviceMemory &stagingBufferMemory, const void *newData, VkDeviceSize bufferSize);
 
 extern void updateChunkBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer,
                               const VkDeviceMemory &stagingBufferMemory,

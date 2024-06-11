@@ -73,7 +73,7 @@ extern VkCommandBuffer beginSingleTimeCommands();
 extern void endSingleTimeCommands(
     const VkCommandBuffer &commandBuffer);
 
-extern void transitionImageLayout(const VkImage &image, const VkImageLayout oldLayout, const VkImageLayout newLayout);
+extern void transitionImageLayout(const VkImage &image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 // SUPPORT/QUERY FUNCTIONS
 extern QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface);

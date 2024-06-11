@@ -13,22 +13,22 @@ void MainRenderer::init() {
 void MainRenderer::draw() {
     float deltaTime = TimeManager::setDeltaTime();
     camera.update(deltaTime);
-    uint32_t imageIndex = coreRenderer.beginDraw();
+    uint32_t imageIndex = CoreRenderer::beginDraw();
     if (imageIndex == -1) {
         return;
     }
     const uint32_t frame = CoreRenderer::currentFrame;
-    const VkCommandBuffer commandBuffer = CoreRenderer::commandBuffers[frame];
+    VkCommandBuffer commandBuffer = CoreRenderer::commandBuffers[frame];
     chunkRenderer.draw(commandBuffer, frame, Camera::ubo);
     textRenderer.draw(CoreRenderer::device, commandBuffer, frame, TimeManager::queryFPS());
-    coreRenderer.finishDraw(imageIndex);
+    CoreRenderer::finishDraw(imageIndex);
 }
 
-void MainRenderer::cleanup() {
+void MainRenderer::cleanup() const {
     textRenderer.cleanup(CoreRenderer::device);
     chunkRenderer.cleanup(CoreRenderer::device, MAX_FRAMES_IN_FLIGHT);
     VulkanDebugger::cleanup(CoreRenderer::instance);
-    coreRenderer.cleanup();
+    CoreRenderer::cleanup();
 }
 
 GLFWwindow *MainRenderer::getWindow() {

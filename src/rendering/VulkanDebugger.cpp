@@ -8,7 +8,7 @@
 #ifdef NDEBUG
     constexpr bool enableValidationLayers = false;
 #else
-    constexpr bool enableValidationLayers = true;
+constexpr bool enableValidationLayers = true;
 #endif
 
 const std::vector<const char *> VulkanDebugger::validationLayers = {
@@ -17,11 +17,11 @@ const std::vector<const char *> VulkanDebugger::validationLayers = {
 
 VkDebugUtilsMessengerEXT VulkanDebugger::debugMessenger;
 
-void VulkanDebugger::init(VkDebugUtilsMessengerCreateInfoEXT& debugCreateInfo) {
+void VulkanDebugger::init(VkDebugUtilsMessengerCreateInfoEXT &debugCreateInfo) {
     populateDebugMessengerCreateInfo(debugCreateInfo);
 }
 
-void VulkanDebugger::cleanup(const VkInstance& instance) {
+void VulkanDebugger::cleanup(const VkInstance &instance) {
     if (enabled()) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
@@ -43,7 +43,7 @@ bool VulkanDebugger::enabled() {
     return enableValidationLayers;
 }
 
-void VulkanDebugger::setupDebugMessenger(const VkInstance& instance) {
+void VulkanDebugger::setupDebugMessenger(const VkInstance &instance) {
     if (!enabled()) {
         return;
     }
@@ -56,7 +56,7 @@ void VulkanDebugger::setupDebugMessenger(const VkInstance& instance) {
     }
 }
 
- const char* const* VulkanDebugger::getValidationLayers() {
+const char *const*VulkanDebugger::getValidationLayers() {
     return validationLayers.data();
 }
 
@@ -98,9 +98,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugger::debugCallback(
 }
 
 VkResult VulkanDebugger::CreateDebugUtilsMessengerEXT(VkInstance instance,
-                                             const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                             const VkAllocationCallbacks *pAllocator,
-                                             VkDebugUtilsMessengerEXT *pDebugMessenger) {
+                                                      const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                                                      const VkAllocationCallbacks *pAllocator,
+                                                      VkDebugUtilsMessengerEXT *pDebugMessenger) {
     auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance,
         "vkCreateDebugUtilsMessengerEXT"));
     if (func != nullptr) {
@@ -111,10 +111,10 @@ VkResult VulkanDebugger::CreateDebugUtilsMessengerEXT(VkInstance instance,
 }
 
 void VulkanDebugger::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                          const VkAllocationCallbacks *pAllocator) {
+                                                   const VkAllocationCallbacks *pAllocator) {
     auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")
-        );
+    );
 
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);

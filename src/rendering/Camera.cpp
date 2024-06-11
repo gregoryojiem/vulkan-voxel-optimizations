@@ -11,7 +11,7 @@
 
 UniformBufferObject Camera::ubo;
 
-void Camera::init(GLFWwindow * window, uint32_t width, uint32_t height) {
+void Camera::init(GLFWwindow *window, uint32_t width, uint32_t height) {
     position = glm::vec3(0.0f, 0.0f, 5.0f);
     up = glm::vec3(0.0f, 1.0f, 0.0f);
     yaw = 0.0f;
@@ -20,16 +20,12 @@ void Camera::init(GLFWwindow * window, uint32_t width, uint32_t height) {
     movementSpeed = 30.0f;
     horzMouseSens = 200.0f;
     vertMouseSens = 200.0f;
-    textScale = 90.0f;
 
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     ubo.model = glm::mat4(1.0f);
     ubo.view = glm::lookAt(position, glm::vec3(0.0f, 2.0f, 0.0f), up);
-    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 10000.0f);
-    ubo.textView = glm::lookAt(glm::vec3(0.0f, 0.0f, 360.0f), glm::vec3(0.0f, 0.0f, 0.0f), up);
-    ubo.textProj = glm::perspective(glm::radians(textScale), width / (float) height, 0.1f, 1000.0f);
+    ubo.proj = glm::perspective(glm::radians(fovy), aspectRatio, 0.1f, 10000.0f);
     ubo.proj[1][1] *= -1;
-    ubo.textProj[1][1] *= -1;
-
     InputHandler::init(window);
 }
 
@@ -38,9 +34,8 @@ void Camera::update(float deltaTime) {
     InputState state = InputHandler::getState();
 
     // handle input and calculate new yaw and pitch to get the new front vector
-    yaw += -state.xDelta * horzMouseSens * deltaTime;
-    pitch += state.yDelta * vertMouseSens * deltaTime;
-
+    yaw += -static_cast<float>(state.xDelta) * horzMouseSens * deltaTime;
+    pitch += static_cast<float>(state.yDelta) * vertMouseSens * deltaTime;
     if (pitch > 89.0f) {
         pitch = 89.0f;
     }
@@ -53,9 +48,9 @@ void Camera::update(float deltaTime) {
     InputHandler::resetCursor();
 
     glm::vec3 front;
-    front.x = glm::sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.x = static_cast<float>(glm::sin(glm::radians(yaw)) * cos(glm::radians(pitch)));
     front.y = glm::sin(glm::radians(pitch));
-    front.z = glm::cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.z = static_cast<float>(glm::cos(glm::radians(yaw)) * cos(glm::radians(pitch)));
     front = glm::normalize(front);
 
     glm::vec3 right = glm::normalize(glm::cross(front, up));
@@ -79,6 +74,7 @@ void Camera::update(float deltaTime) {
     ubo.view = glm::lookAt(position, position - front, up);
 }
 
-void Camera::updateProj(uint32_t width, uint32_t height) {
-    ubo.proj = glm::perspective(glm::radians(fovy), width / (float) height, 0.1f, 300.0f);
+void Camera::updateProj(uint32_t width, uint32_t height) const {
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    ubo.proj = glm::perspective(glm::radians(fovy), aspectRatio, 0.1f, 300.0f);
 }

@@ -29,12 +29,12 @@ void ChunkRenderer::init() {
     createStagingBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize);
 }
 
-void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject& ubo) {
+void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo) {
     resizeBuffers();
     updateBuffers();
 
     const VkBuffer vertexBuffers[] = {vertexBuffer};
-    const VkDeviceSize offsets[] = {0};
+    constexpr VkDeviceSize offsets[] = {0};
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -74,9 +74,9 @@ void ChunkRenderer::updateBuffers() const {
         return;
     }
     updateChunkBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory, globalChunkVertices.data(),
-                 vertexMemorySize, sizeof(ChunkVertex), VertexPool::getOccupiedVertexRanges());
+                      vertexMemorySize, sizeof(ChunkVertex), VertexPool::getOccupiedVertexRanges());
     updateChunkBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory, globalChunkIndices.data(),
-                 indexMemorySize, sizeof(globalChunkIndices[0]), VertexPool::getOccupiedIndexRanges());
+                      indexMemorySize, sizeof(globalChunkIndices[0]), VertexPool::getOccupiedIndexRanges());
     updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedIndexRanges().size());
     VertexPool::newUpdate = false;
 }

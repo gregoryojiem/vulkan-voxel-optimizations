@@ -10,15 +10,17 @@ struct ChunkVertex {
     uint8_t color[4];
 
     static VkVertexInputBindingDescription getBindingDescription();
+
     static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 };
 
-struct TexturedVertex  {
+struct TexturedVertex {
     glm::vec2 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
 
     static VkVertexInputBindingDescription getBindingDescription();
+
     static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 };
 

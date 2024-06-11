@@ -33,21 +33,22 @@ public:
 
     void init();
 
-    uint32_t beginDraw();
+    static uint32_t beginDraw();
 
-    void finishDraw(uint32_t imageIndex);
+    static void finishDraw(uint32_t imageIndex);
 
-    void beginRecording(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    static void beginRecording(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-    void finishRecording(VkCommandBuffer commandBuffer);
+    static void finishRecording(VkCommandBuffer commandBuffer);
 
-    void cleanup();
+    static void cleanup();
 
     static VkExtent2D getExtent();
 
     static uint32_t getWindowWidth();
 
     static uint32_t getWindowHeight();
+
 private:
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
 };

@@ -11,7 +11,7 @@ public:
 
     void draw();
 
-    void cleanup();
+    void cleanup() const;
 
     static GLFWwindow *getWindow();
 

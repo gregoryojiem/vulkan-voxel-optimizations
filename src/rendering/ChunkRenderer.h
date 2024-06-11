@@ -11,7 +11,7 @@ class ChunkRenderer {
 public:
     void init();
 
-    void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject& ubo);
+    void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo);
 
     void cleanup(const VkDevice &device, uint32_t maxFramesInFlight) const;
 

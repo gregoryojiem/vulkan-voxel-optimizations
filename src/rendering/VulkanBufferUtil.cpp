@@ -212,7 +212,7 @@ void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t wi
 }
 
 void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, const VkDeviceMemory &stagingBufferMemory,
-                  void *newData, VkDeviceSize bufferSize) {
+                  const void *newData, VkDeviceSize bufferSize) {
     void *data;
     vkMapMemory(CoreRenderer::device, stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, newData, bufferSize);
