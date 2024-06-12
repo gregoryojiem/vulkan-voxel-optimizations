@@ -115,11 +115,10 @@ void SwapChain::createImageViews(const VkDevice &device) {
 
 void SwapChain::createDepthResources(const VkDevice &device, const VkPhysicalDevice &physDevice) {
     VkFormat depthFormat = findDepthFormat(physDevice);
-    createImage(depthImage, depthImageMemory, device, physDevice, getWidth(),
-                getHeight(),
-                depthFormat,
+    createImage(depthImage, depthImageMemory, getWidth(), getHeight(), depthFormat,
                 VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 

@@ -19,7 +19,7 @@ void TextRenderer::init() {
     createFontAtlasGlyphs();
     createDescriptorSetLayout(descriptorSetLayout, true);
     createDescriptorPool(descriptorPool, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    createDescriptorSetsSampler(descriptorSets, descriptorSetLayout, descriptorPool, atlasImageView, atlasSampler);
+    createSamplerDescriptorSets(descriptorSets, descriptorSetLayout, descriptorPool, atlasImageView, atlasSampler);
     createGraphicsPipeline(
         pipelineLayout, textGraphicsPipeline,
         "../src/rendering/shaders/text_vert.spv", "../src/rendering/shaders/text_frag.spv",

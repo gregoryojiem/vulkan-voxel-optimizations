@@ -29,6 +29,8 @@ extern void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
                                  std::vector<VkDeviceMemory> &uniformBuffersMemory,
                                  std::vector<void *> &uniformBuffersMapped);
 
+extern void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void* newData, int width, int height);
+
 extern void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int &width, int &height,
                                       const std::string &path);
 

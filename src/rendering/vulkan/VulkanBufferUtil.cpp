@@ -123,15 +123,14 @@ void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
     }
 }
 
-void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int &width, int &height,
-                               const std::string &path) {
-    int channels;
-    stbi_uc *pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void* newData, int width, int height) {
     uint32_t imageSize = width * height * 4;
 
-    if (width == 0 || height == 0) {
-        throw std::runtime_error("failed to open shader image!");
-    }
+    createImage(image, imageMemory, width, height,
+                VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     VkBuffer stagingBuffer{};
     VkDeviceMemory stagingBufferMemory{};
@@ -139,20 +138,25 @@ void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int 
 
     void *data;
     vkMapMemory(CoreRenderer::device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, imageSize);
+    memcpy(data, newData, imageSize);
     vkUnmapMemory(CoreRenderer::device, stagingBufferMemory);
-
-    createImage(image, imageMemory, CoreRenderer::device, CoreRenderer::physicalDevice,
-                width,
-                height,
-                VK_FORMAT_R8G8B8A8_SRGB,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer, image, width, height);
     transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     destroyBuffer(stagingBuffer, stagingBufferMemory);
+}
+
+void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int &width, int &height,
+                               const std::string &path) {
+    int channels;
+    stbi_uc *pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+    if (width == 0 || height == 0) {
+        throw std::runtime_error("failed to open shader image!");
+    }
+
+    createShaderImage(image, imageMemory, pixels, width, height);
 }
 
 //GENERAL UTILITY FUNCTIONS

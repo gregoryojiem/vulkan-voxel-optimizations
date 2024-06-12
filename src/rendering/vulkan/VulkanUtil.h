@@ -28,8 +28,7 @@ extern VkImageView createTextureImageView(const VkImage &textureImage);
 
 extern void createTextureSampler(VkSampler &textureSampler);
 
-extern void createImage(VkImage &image, VkDeviceMemory &imageMemory, const VkDevice &device,
-                        const VkPhysicalDevice &physDevice,
+extern void createImage(VkImage &image, VkDeviceMemory &imageMemory,
                         uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                         VkMemoryPropertyFlags properties);
 
@@ -47,7 +46,7 @@ extern void createDescriptorSetsUB(std::vector<VkDescriptorSet> &descriptorSets,
                                    const VkDescriptorSetLayout &descriptorSetLayout,
                                    const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers);
 
-void createDescriptorSetsSampler(std::vector<VkDescriptorSet> &descriptorSets,
+void createSamplerDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
                                  const VkDescriptorSetLayout &descriptorSetLayout,
                                  const VkDescriptorPool &descriptorPool,
                                  const VkImageView &imageView, const VkSampler &sampler);

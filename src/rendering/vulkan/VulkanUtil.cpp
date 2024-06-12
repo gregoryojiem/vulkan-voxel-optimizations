@@ -169,8 +169,7 @@ VkImageView createTextureImageView(const VkImage &textureImage) {
     return createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
-void createImage(VkImage &image, VkDeviceMemory &imageMemory, const VkDevice &device,
-                 const VkPhysicalDevice &physDevice,
+void createImage(VkImage &image, VkDeviceMemory &imageMemory,
                  uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                  VkMemoryPropertyFlags properties) {
     VkImageCreateInfo imageInfo{};
@@ -188,23 +187,23 @@ void createImage(VkImage &image, VkDeviceMemory &imageMemory, const VkDevice &de
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    if (vkCreateImage(CoreRenderer::device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
+    vkGetImageMemoryRequirements(CoreRenderer::device, image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(physDevice, memRequirements.memoryTypeBits, properties);
+    allocInfo.memoryTypeIndex = findMemoryType(CoreRenderer::physicalDevice, memRequirements.memoryTypeBits, properties);
 
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+    if (vkAllocateMemory(CoreRenderer::device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    vkBindImageMemory(device, image, imageMemory, 0);
+    vkBindImageMemory(CoreRenderer::device, image, imageMemory, 0);
 }
 
 void createTextureSampler(VkSampler &textureSampler) {
@@ -390,7 +389,7 @@ void createDescriptorSetsUB(std::vector<VkDescriptorSet> &descriptorSets,
     }
 }
 
-void createDescriptorSetsSampler(std::vector<VkDescriptorSet> &descriptorSets,
+void createSamplerDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
                                  const VkDescriptorSetLayout &descriptorSetLayout,
                                  const VkDescriptorPool &descriptorPool,
                                  const VkImageView &imageView, const VkSampler &sampler) {
