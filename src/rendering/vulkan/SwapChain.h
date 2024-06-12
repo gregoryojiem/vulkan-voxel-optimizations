@@ -12,7 +12,7 @@ public:
 
     void createImageViews(const VkDevice &device);
 
-    void createDepthResources(const VkDevice &device, const VkPhysicalDevice &physDevice);
+    void createDepthResources();
 
     void createFramebuffers(const VkDevice &device, const VkRenderPass &renderPass);
 

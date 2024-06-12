@@ -82,9 +82,9 @@ extern SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice &phy
 extern uint32_t findMemoryType(const VkPhysicalDevice &physicalDevice, uint32_t typeFilter,
                                VkMemoryPropertyFlags properties);
 
-extern VkFormat findDepthFormat(const VkPhysicalDevice &physicalDevice);
+extern VkFormat findDepthFormat();
 
-static VkFormat findSupportedFormat(const VkPhysicalDevice &physicalDevice, const std::vector<VkFormat> &candidates,
+static VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
                                     VkImageTiling tiling, VkFormatFeatureFlags features);
 
 static std::vector<const char *> getRequiredExtensions();

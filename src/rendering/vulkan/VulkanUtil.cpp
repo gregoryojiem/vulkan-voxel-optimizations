@@ -249,7 +249,7 @@ void createRenderPass(VkRenderPass &renderPass, VkFormat imageColorFormat) {
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat(CoreRenderer::physicalDevice);
+    depthAttachment.format = findDepthFormat();
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -791,20 +791,19 @@ uint32_t findMemoryType(const VkPhysicalDevice &physicalDevice, uint32_t typeFil
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-VkFormat findDepthFormat(const VkPhysicalDevice &physicalDevice) {
+VkFormat findDepthFormat() {
     return findSupportedFormat(
-        physicalDevice,
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
 }
 
-VkFormat findSupportedFormat(const VkPhysicalDevice &physicalDevice, const std::vector<VkFormat> &candidates,
+VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
                              VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format: candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+        vkGetPhysicalDeviceFormatProperties(CoreRenderer::physicalDevice, format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             return format;

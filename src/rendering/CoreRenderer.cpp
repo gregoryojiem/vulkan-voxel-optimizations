@@ -39,7 +39,7 @@ void CoreRenderer::init() {
     swapChain.init(window, device, physicalDevice, surface);
     createRenderPass(renderPass, swapChain.getImageFormat());
     createCommandPool(commandPool);
-    swapChain.createDepthResources(device, physicalDevice);
+    swapChain.createDepthResources();
     swapChain.createFramebuffers(device, renderPass);
     createCommandBuffers(commandBuffers);
     createSyncObjects(imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences);
