@@ -113,11 +113,11 @@ void SwapChain::createImageViews(const VkDevice &device) {
     }
 }
 
-void SwapChain::createDepthResources(const VkDevice &device, const VkPhysicalDevice &physDevice) {
-    VkFormat depthFormat = findDepthFormat(physDevice);
+void SwapChain::createDepthResources() {
+    VkFormat depthFormat = findDepthFormat();
     createImage(depthImage, depthImageMemory, getWidth(), getHeight(), depthFormat,
                 VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
@@ -161,7 +161,7 @@ void SwapChain::recreate(GLFWwindow *window, const VkDevice &device, const VkPhy
     cleanup(device);
     init(window, device, physicalDevice, surface);
     createImageViews(device);
-    createDepthResources(device, physicalDevice);
+    createDepthResources();
     createFramebuffers(device, renderPass);
 }
 
