@@ -11,5 +11,3 @@ vulkan-voxel.vcxproj.user
 
 dependencies
 freetype.dll
-
-resources/fonts/generated
