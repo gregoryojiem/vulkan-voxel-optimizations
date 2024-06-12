@@ -13,7 +13,7 @@ int main() {
         world.init();
         mainRenderer.init();
 
-        while (!glfwWindowShouldClose(mainRenderer.getWindow())) {
+        while (!glfwWindowShouldClose(MainRenderer::getWindow())) {
             glfwPollEvents();
             world.mainLoop();
             mainRenderer.draw();

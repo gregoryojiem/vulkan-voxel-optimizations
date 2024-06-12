@@ -14,7 +14,7 @@ bool VertexPool::newUpdate;
 void VertexPool::addToVertexPool(const std::vector<ChunkVertex> &vertices, const std::vector<uint32_t> &indices,
                                  uint32_t chunkID) {
     ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
-                                                                0, vertices.size(), false);
+                                                                 0, vertices.size(), false);
 
     ChunkMemoryRange indexRangeToUse = getAvailableMemoryRange(occupiedIndexRanges, freeIndexRanges, chunkID,
                                                                vertexRangeToUse.startPos, indices.size(), true);
