@@ -129,6 +129,10 @@ void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int 
     stbi_uc *pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
     uint32_t imageSize = width * height * 4;
 
+    if (width == 0 || height == 0) {
+        throw std::runtime_error("failed to open shader image!");
+    }
+
     VkBuffer stagingBuffer{};
     VkDeviceMemory stagingBufferMemory{};
     createStagingBuffer(stagingBuffer, stagingBufferMemory, imageSize);
@@ -165,9 +169,7 @@ void copyBuffer(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, VkDeviceSi
 void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, uint32_t objectSize,
                       std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
     std::vector<VkBufferCopy> rangesToCopy;
-
     for (auto &[chunkID, memoryRange]: memoryRanges) {
         if (!memoryRange.savedToVBuffer) {
             VkBufferCopy copyRegion{};
@@ -176,13 +178,9 @@ void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, uint
             copyRegion.dstOffset = startByte;
             copyRegion.size = memoryRange.objectCount * objectSize;
             memoryRange.savedToVBuffer = true;
-            rangesToCopy.push_back(copyRegion);
-            break;
+            vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
         }
     }
-
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, rangesToCopy.size(), rangesToCopy.data());
-
     endSingleTimeCommands(commandBuffer);
 }
 
@@ -193,12 +191,10 @@ void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t wi
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
-
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {
         width,
@@ -207,7 +203,6 @@ void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t wi
     };
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
     endSingleTimeCommands(commandBuffer);
 }
 
