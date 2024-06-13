@@ -18,7 +18,6 @@ void TextRenderer::init(VkDescriptorPool& descriptorPool) {
     createTextureSampler(atlasSampler);
     createFontAtlasGlyphs();
     createDescriptorSetLayout(descriptorSetLayout, true);
-    createDescriptorPool(descriptorPool, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     createSamplerDescriptorSets(descriptorSets, descriptorSetLayout, descriptorPool, atlasImageView, atlasSampler);
     createGraphicsPipeline(
         pipelineLayout, textGraphicsPipeline,

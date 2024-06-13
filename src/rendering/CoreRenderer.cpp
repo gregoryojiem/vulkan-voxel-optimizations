@@ -39,7 +39,9 @@ void CoreRenderer::init() {
     createLogicalDevice(device, graphicsQueue, presentQueue, physicalDevice, surface, deviceExtensions);
     swapChain.init(window, device, physicalDevice, surface);
     createRenderPass(renderPass, swapChain.getImageFormat());
-    createDescriptorPool(descriptorPool, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    createDescriptorPool(descriptorPool, {
+                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+                         });
     createCommandPool(commandPool);
     swapChain.createDepthResources();
     swapChain.createFramebuffers(device, renderPass);
