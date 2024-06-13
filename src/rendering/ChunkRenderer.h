@@ -9,7 +9,7 @@
 
 class ChunkRenderer {
 public:
-    void init();
+    void init(VkDescriptorPool& descriptorPool);
 
     void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo);
 
@@ -20,7 +20,6 @@ private:
     VkPipeline graphicsPipeline{};
 
     VkDescriptorSetLayout descriptorSetLayout{};
-    VkDescriptorPool descriptorPool{};
     std::vector<VkDescriptorSet> descriptorSets;
 
     VkBuffer vertexBuffer{};

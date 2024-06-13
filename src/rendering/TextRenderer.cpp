@@ -11,7 +11,7 @@
 const std::string TextRenderer::fontPath = "../resources/fonts";
 const std::string TextRenderer::fontToUse = "abel";
 
-void TextRenderer::init() {
+void TextRenderer::init(VkDescriptorPool& descriptorPool) {
     createShaderImageFromFile(fontAtlasImage, fontAtlasMemory, atlasWidth, atlasHeight,
                               fontPath + "/" + "generated/" + fontToUse + ".png");
     atlasImageView = createTextureImageView(fontAtlasImage);
@@ -198,7 +198,6 @@ void TextRenderer::cleanup(const VkDevice &device) const {
     destroyBuffer(textVertexBuffer, textVertexBufferMemory);
     destroyBuffer(textStagingBuffer, textStagingBufferMemory);
     destroyBuffer(textDrawParamsBuffer, textDrawParamsBufferMemory);
-    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     vkDestroyPipeline(device, textGraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

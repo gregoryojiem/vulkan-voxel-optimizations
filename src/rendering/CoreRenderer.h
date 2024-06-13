@@ -24,6 +24,7 @@ public:
     static VkQueue presentQueue;
     static SwapChain swapChain;
     static VkRenderPass renderPass;
+    static VkDescriptorPool descriptorPool;
     static VkCommandPool commandPool;
     static std::vector<VkCommandBuffer> commandBuffers;
     static std::vector<VkSemaphore> imageAvailableSemaphores;

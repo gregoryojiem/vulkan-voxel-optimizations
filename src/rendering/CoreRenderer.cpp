@@ -23,6 +23,7 @@ VkQueue CoreRenderer::graphicsQueue;
 VkQueue CoreRenderer::presentQueue;
 SwapChain CoreRenderer::swapChain;
 VkRenderPass CoreRenderer::renderPass;
+VkDescriptorPool CoreRenderer::descriptorPool;
 VkCommandPool CoreRenderer::commandPool;
 std::vector<VkCommandBuffer> CoreRenderer::commandBuffers;
 std::vector<VkSemaphore> CoreRenderer::imageAvailableSemaphores;
@@ -38,6 +39,7 @@ void CoreRenderer::init() {
     createLogicalDevice(device, graphicsQueue, presentQueue, physicalDevice, surface, deviceExtensions);
     swapChain.init(window, device, physicalDevice, surface);
     createRenderPass(renderPass, swapChain.getImageFormat());
+    createDescriptorPool(descriptorPool, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     createCommandPool(commandPool);
     swapChain.createDepthResources();
     swapChain.createFramebuffers(device, renderPass);
@@ -172,6 +174,7 @@ void CoreRenderer::cleanup() {
     }
 
     swapChain.cleanup(device);
+    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
     vkDestroyDevice(device, nullptr);

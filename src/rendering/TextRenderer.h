@@ -22,7 +22,7 @@ struct ScreenText {
 
 class TextRenderer {
 public:
-    void init();
+    void init(VkDescriptorPool& descriptorPool);
 
     void addText(const std::string &text, const glm::vec2 &position, float scale, uint32_t id);
 
@@ -55,7 +55,6 @@ private:
     VkSampler atlasSampler{};
 
     VkDescriptorSetLayout descriptorSetLayout{};
-    VkDescriptorPool descriptorPool{};
     std::vector<VkDescriptorSet> descriptorSets;
 
     VkPipelineLayout pipelineLayout{};

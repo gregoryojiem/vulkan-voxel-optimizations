@@ -5,8 +5,8 @@
 
 void MainRenderer::init() {
     coreRenderer.init();
-    chunkRenderer.init();
-    textRenderer.init();
+    chunkRenderer.init(CoreRenderer::descriptorPool);
+    textRenderer.init(CoreRenderer::descriptorPool);
     camera.init(CoreRenderer::window, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 }
 

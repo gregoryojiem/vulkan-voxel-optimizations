@@ -9,11 +9,10 @@
 #include "vulkan/VulkanUtil.h"
 #include "misc/VertexPool.h"
 
-void ChunkRenderer::init() {
+void ChunkRenderer::init(VkDescriptorPool& descriptorPool) {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);
     createDescriptorSetLayout(descriptorSetLayout, false);
-    createDescriptorPool(descriptorPool, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    createDescriptorSetsUB(descriptorSets, descriptorSetLayout, descriptorPool, uniformBuffers);
+    createUBDescriptorSets(descriptorSets, descriptorSetLayout, descriptorPool, uniformBuffers);
     createGraphicsPipeline(
         pipelineLayout, graphicsPipeline,
         "../src/rendering/shaders/vert.spv", "../src/rendering/shaders/frag.spv",
@@ -92,7 +91,6 @@ void ChunkRenderer::cleanup(const VkDevice &device, uint32_t maxFramesInFlight) 
     destroyBuffer(vertexStagingBuffer, vertexStagingBufferMemory);
     destroyBuffer(drawParamsBuffer, drawParamsBufferMemory);
 
-    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
