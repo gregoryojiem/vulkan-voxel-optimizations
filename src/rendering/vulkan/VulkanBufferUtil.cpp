@@ -29,7 +29,7 @@ void createBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize s
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex =
-            findMemoryType(CoreRenderer::physicalDevice, memRequirements.memoryTypeBits, properties);
+            findMemoryType(memRequirements.memoryTypeBits, properties);
 
     if (vkAllocateMemory(CoreRenderer::device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate buffer memory!");
