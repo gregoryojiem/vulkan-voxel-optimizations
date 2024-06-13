@@ -197,12 +197,11 @@ void createImage(VkImage &image, VkDeviceMemory &imageMemory,
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(CoreRenderer::physicalDevice, memRequirements.memoryTypeBits, properties);
+    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
     if (vkAllocateMemory(CoreRenderer::device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
     }
-
     vkBindImageMemory(CoreRenderer::device, image, imageMemory, 0);
 }
 
@@ -339,23 +338,28 @@ void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool 
     }
 }
 
-void createDescriptorPool(VkDescriptorPool &descriptorPool, VkDescriptorType type) {
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = type;
-    poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+void createDescriptorPool(VkDescriptorPool &descriptorPool, const std::vector<VkDescriptorType> &poolTypes) {
+    std::vector<VkDescriptorPoolSize> poolSizes(poolTypes.size());
+    for (int i = 0; i < poolTypes.size(); i++) {
+        VkDescriptorPoolSize poolSize{};
+        poolSize.type = poolTypes.at(i);
+        poolSize.descriptorCount = poolTypes.size();
+        poolSizes.insert(poolSizes.begin() + i, poolSize);
+    }
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
+    poolInfo.poolSizeCount = poolTypes.size();
+    poolInfo.pPoolSizes = poolSizes.data();
+    //todo remove hardcoded value and find a better system to automatically determine maxSets
+    poolInfo.maxSets = 2 * MAX_FRAMES_IN_FLIGHT;
 
     if (vkCreateDescriptorPool(CoreRenderer::device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 }
 
-void createDescriptorSetsUB(std::vector<VkDescriptorSet> &descriptorSets,
+void createUBDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
                             const VkDescriptorSetLayout &descriptorSetLayout,
                             const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers) {
     std::vector layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -778,9 +782,9 @@ SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice &physDevice
     return details;
 }
 
-uint32_t findMemoryType(const VkPhysicalDevice &physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(CoreRenderer::physicalDevice, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if (typeFilter & 1 << i && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {

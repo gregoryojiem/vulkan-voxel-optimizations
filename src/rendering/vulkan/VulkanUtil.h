@@ -40,9 +40,9 @@ extern void createCommandPool(VkCommandPool &commandPool);
 extern void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout,
                                       bool addSampler);
 
-extern void createDescriptorPool(VkDescriptorPool &descriptorPool, VkDescriptorType type);
+extern void createDescriptorPool(VkDescriptorPool &descriptorPool, const std::vector<VkDescriptorType> &poolTypes);
 
-extern void createDescriptorSetsUB(std::vector<VkDescriptorSet> &descriptorSets,
+extern void createUBDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
                                    const VkDescriptorSetLayout &descriptorSetLayout,
                                    const VkDescriptorPool &descriptorPool, const std::vector<VkBuffer> &uniformBuffers);
 
@@ -79,7 +79,7 @@ extern QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice &physDevice, 
 
 extern SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface);
 
-extern uint32_t findMemoryType(const VkPhysicalDevice &physicalDevice, uint32_t typeFilter,
+extern uint32_t findMemoryType(uint32_t typeFilter,
                                VkMemoryPropertyFlags properties);
 
 extern VkFormat findDepthFormat();
