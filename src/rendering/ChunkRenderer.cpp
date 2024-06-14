@@ -9,16 +9,16 @@
 #include "vulkan/VulkanUtil.h"
 #include "misc/VertexPool.h"
 
-void ChunkRenderer::init(VkDescriptorPool& descriptorPool) {
+void ChunkRenderer::init(VkDescriptorPool &descriptorPool) {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);
     createDescriptorSetLayout(descriptorSetLayout, false);
     createUBDescriptorSets(descriptorSets, descriptorSetLayout, descriptorPool, uniformBuffers);
     createGraphicsPipeline(
         pipelineLayout, graphicsPipeline,
-        "../src/rendering/shaders/vert.spv", "../src/rendering/shaders/frag.spv",
+        descriptorSetLayout, "../src/rendering/shaders/vert.spv",
+        "../src/rendering/shaders/frag.spv",
         ChunkVertex::getBindingDescription(),
         ChunkVertex::getAttributeDescriptions(),
-        descriptorSetLayout,
         true);
     vertexMemorySize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
     indexMemorySize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();

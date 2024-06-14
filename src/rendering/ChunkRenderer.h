@@ -6,10 +6,9 @@
 
 #include "vulkan/VulkanStructs.h"
 
-
 class ChunkRenderer {
 public:
-    void init(VkDescriptorPool& descriptorPool);
+    void init(VkDescriptorPool &descriptorPool);
 
     void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo);
 
