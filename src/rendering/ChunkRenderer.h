@@ -8,7 +8,7 @@
 
 class ChunkRenderer {
 public:
-    void init(VkDescriptorPool &descriptorPool);
+    void init(VkDescriptorPool &descriptorPool, VkRenderPass &renderPass);
 
     void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo);
 
