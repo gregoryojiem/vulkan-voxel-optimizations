@@ -11,20 +11,20 @@
 const std::string TextRenderer::fontPath = "../resources/fonts";
 const std::string TextRenderer::fontToUse = "abel";
 
-void TextRenderer::init(VkDescriptorPool& descriptorPool) {
+void TextRenderer::init(VkDescriptorPool& descriptorPool, VkRenderPass renderPass) {
     createShaderImageFromFile(fontAtlasImage, fontAtlasMemory, atlasWidth, atlasHeight,
                               fontPath + "/" + "generated/" + fontToUse + ".png");
     atlasImageView = createTextureImageView(fontAtlasImage);
     createTextureSampler(atlasSampler);
     createFontAtlasGlyphs();
-    createDescriptorSetLayout(descriptorSetLayout, true);
+    createDescriptorSetLayout(descriptorSetLayout, false, true);
     createSamplerDescriptorSets(descriptorSets, descriptorSetLayout, descriptorPool, atlasImageView, atlasSampler);
     createGraphicsPipeline(
         pipelineLayout, textGraphicsPipeline,
-        "../src/rendering/shaders/text_vert.spv", "../src/rendering/shaders/text_frag.spv",
-        TexturedVertex::getBindingDescription(),
-        TexturedVertex::getAttributeDescriptions(), descriptorSetLayout,
-        false);
+        descriptorSetLayout, renderPass,
+        "../src/rendering/shaders/text_vert.spv",
+        "../src/rendering/shaders/text_frag.spv", TexturedVertex::getBindingDescription(),
+        TexturedVertex::getAttributeDescriptions(), true, false);
 }
 
 void TextRenderer::createFontAtlasGlyphs() {

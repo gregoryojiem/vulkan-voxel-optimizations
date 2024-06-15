@@ -22,7 +22,7 @@ struct ScreenText {
 
 class TextRenderer {
 public:
-    void init(VkDescriptorPool& descriptorPool);
+    void init(VkDescriptorPool& descriptorPool, VkRenderPass renderPass);
 
     void addText(const std::string &text, const glm::vec2 &position, float scale, uint32_t id);
 

@@ -305,18 +305,20 @@ void createCommandPool(VkCommandPool &commandPool) {
     }
 }
 
-void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool addSampler) {
-    VkDescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
+void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool addUBO, bool addSampler) {
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     std::vector<VkDescriptorSetLayoutBinding> bindings{};
 
+    if (addUBO) {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+        bindings.push_back(uboLayoutBinding);
+    }
     if (addSampler) {
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
         samplerLayoutBinding.binding = 1;
@@ -325,8 +327,6 @@ void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool 
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         bindings.push_back(samplerLayoutBinding);
-    } else {
-        bindings.push_back(uboLayoutBinding);
     }
 
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -352,10 +352,61 @@ void createDescriptorPool(VkDescriptorPool &descriptorPool, const std::vector<Vk
     poolInfo.poolSizeCount = poolTypes.size();
     poolInfo.pPoolSizes = poolSizes.data();
     //todo remove hardcoded value and find a better system to automatically determine maxSets
-    poolInfo.maxSets = 2 * MAX_FRAMES_IN_FLIGHT;
+    poolInfo.maxSets = 3 * MAX_FRAMES_IN_FLIGHT;
 
     if (vkCreateDescriptorPool(CoreRenderer::device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
+    }
+}
+
+void createUBAndSamplerDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
+                                      const VkDescriptorSetLayout &descriptorSetLayout,
+                                      const VkDescriptorPool &descriptorPool,
+                                      const std::vector<VkBuffer> &uniformBuffers,
+                                      const VkImageView &imageView, const VkSampler &sampler,
+                                      VkImageLayout imageLayout) {
+    std::vector layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+    allocInfo.pSetLayouts = layouts.data();
+
+    descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+    if (vkAllocateDescriptorSets(CoreRenderer::device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = uniformBuffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = imageLayout;
+        imageInfo.imageView = imageView;
+        imageInfo.sampler = sampler;
+
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = descriptorSets[i];
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(CoreRenderer::device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -429,11 +480,12 @@ void createSamplerDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
 }
 
 void createGraphicsPipeline(VkPipelineLayout &pipelineLayout, VkPipeline &graphicsPipeline,
-                            const std::string &vertShaderCode, const std::string &fragShaderCode,
+                            VkDescriptorSetLayout &descriptorSetLayout, VkRenderPass &renderPass,
+                            const std::string &vertShaderCode,
+                            const std::string &fragShaderCode,
                             const VkVertexInputBindingDescription &bindingDescription,
                             const std::vector<VkVertexInputAttributeDescription> &attributeDescriptions,
-                            VkDescriptorSetLayout &descriptorSetLayout,
-                            bool depthEnabled) {
+                            bool colorEnabled, bool depthEnabled) {
     VkShaderModule vertShaderModule = createShaderModule(readFile(vertShaderCode));
     VkShaderModule fragShaderModule = createShaderModule(readFile(fragShaderCode));
 
@@ -574,18 +626,16 @@ void createGraphicsPipeline(VkPipelineLayout &pipelineLayout, VkPipeline &graphi
     pipelineInfo.pViewportState = &viewportState;
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pDepthStencilState = nullptr; // Optional
+    pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
 
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = CoreRenderer::renderPass;
+    pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
 
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     pipelineInfo.basePipelineIndex = -1; // Optional
-
-    pipelineInfo.pDepthStencilState = &depthStencil;
 
     if (vkCreateGraphicsPipelines(CoreRenderer::device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                   &graphicsPipeline) != VK_SUCCESS) {

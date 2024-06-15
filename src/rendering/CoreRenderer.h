@@ -38,7 +38,9 @@ public:
 
     static void finishDraw(uint32_t imageIndex);
 
-    static void beginRecording(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    static void beginRecording(VkCommandBuffer commandBuffer);
+
+    static void beginRenderPass(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     static void finishRecording(VkCommandBuffer commandBuffer);
 

@@ -5,8 +5,8 @@
 
 void MainRenderer::init() {
     coreRenderer.init();
-    chunkRenderer.init(CoreRenderer::descriptorPool);
-    textRenderer.init(CoreRenderer::descriptorPool);
+    chunkRenderer.init(CoreRenderer::descriptorPool, CoreRenderer::renderPass);
+    textRenderer.init(CoreRenderer::descriptorPool, CoreRenderer::renderPass);
     camera.init(CoreRenderer::window, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 }
 
@@ -19,6 +19,7 @@ void MainRenderer::draw() {
     }
     const uint32_t frame = CoreRenderer::currentFrame;
     VkCommandBuffer commandBuffer = CoreRenderer::commandBuffers[frame];
+    CoreRenderer::beginRenderPass(commandBuffer, imageIndex);
     chunkRenderer.draw(commandBuffer, frame, Camera::ubo);
     textRenderer.draw(CoreRenderer::device, commandBuffer, frame, TimeManager::queryFPS());
     CoreRenderer::finishDraw(imageIndex);

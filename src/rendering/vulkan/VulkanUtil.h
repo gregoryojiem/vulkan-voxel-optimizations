@@ -38,9 +38,15 @@ extern void createRenderPass(VkRenderPass &renderPass,
 extern void createCommandPool(VkCommandPool &commandPool);
 
 extern void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout,
-                                      bool addSampler);
+                                      bool addUBO, bool addSampler);
 
 extern void createDescriptorPool(VkDescriptorPool &descriptorPool, const std::vector<VkDescriptorType> &poolTypes);
+
+extern void createUBAndSamplerDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
+                                             const VkDescriptorSetLayout &descriptorSetLayout,
+                                             const VkDescriptorPool &descriptorPool,
+                                             const std::vector<VkBuffer> &uniformBuffers,
+                                             const VkImageView &imageView, const VkSampler &sampler, VkImageLayout imageLayout);
 
 extern void createUBDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
                                    const VkDescriptorSetLayout &descriptorSetLayout,
@@ -52,11 +58,11 @@ void createSamplerDescriptorSets(std::vector<VkDescriptorSet> &descriptorSets,
                                  const VkImageView &imageView, const VkSampler &sampler);
 
 extern void createGraphicsPipeline(VkPipelineLayout &pipelineLayout, VkPipeline &graphicsPipeline,
-                                   const std::string &vertShaderCode, const std::string &fragShaderCode,
+                                   VkDescriptorSetLayout &descriptorSetLayout, VkRenderPass &renderPass,
+                                   const std::string &vertShaderCode,
+                                   const std::string &fragShaderCode,
                                    const VkVertexInputBindingDescription &bindingDescription,
-                                   const std::vector<VkVertexInputAttributeDescription> &attributeDescriptions,
-                                   VkDescriptorSetLayout &descriptorSetLayout,
-                                   bool depthEnabled);
+                                   const std::vector<VkVertexInputAttributeDescription> &attributeDescriptions, bool colorEnabled, bool depthEnabled);
 
 extern VkShaderModule createShaderModule(const std::vector<char> &shaderCode);
 

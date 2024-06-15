@@ -68,8 +68,7 @@ uint32_t CoreRenderer::beginDraw() {
 
     VkCommandBuffer commandBuffer = commandBuffers[currentFrame];
     vkResetCommandBuffer(commandBuffer, 0);
-
-    beginRecording(commandBuffer, imageIndex);
+    beginRecording(commandBuffer);
     return imageIndex;
 }
 
@@ -118,7 +117,7 @@ void CoreRenderer::finishDraw(uint32_t imageIndex) {
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void CoreRenderer::beginRecording(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void CoreRenderer::beginRecording(VkCommandBuffer commandBuffer) {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0; // Optional
@@ -127,7 +126,9 @@ void CoreRenderer::beginRecording(VkCommandBuffer commandBuffer, uint32_t imageI
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
+}
 
+void CoreRenderer::beginRenderPass(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
