@@ -6,7 +6,7 @@
 
 #include "vulkan/VulkanBufferUtil.h"
 #include "vulkan/VulkanUtil.h"
-#include "../util/GraphicsUtil.h"
+#include "../util/VertexUtil.h"
 
 const std::string TextRenderer::fontPath = "../resources/fonts";
 const std::string TextRenderer::fontToUse = "abel";

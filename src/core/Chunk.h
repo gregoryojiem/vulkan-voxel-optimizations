@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "Block.h"
-#include "../rendering/misc/Vertex.h"
+#include "../rendering/scene/Vertex.h"
 
 extern std::vector<float> SUB_INCREMENTS;
 extern float CHUNK_SHIFT;

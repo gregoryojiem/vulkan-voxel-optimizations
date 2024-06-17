@@ -7,7 +7,7 @@
 
 #include "vulkan/VulkanBufferUtil.h"
 #include "vulkan/VulkanUtil.h"
-#include "misc/VertexPool.h"
+#include "scene/VertexPool.h"
 
 void ChunkRenderer::init(VkDescriptorPool &descriptorPool, VkRenderPass &renderPass) {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);

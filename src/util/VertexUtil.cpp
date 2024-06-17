@@ -1,6 +1,6 @@
-#include "GraphicsUtil.h"
+#include "VertexUtil.h"
 
-#include "../rendering/misc/Vertex.h"
+#include "../rendering/scene/Vertex.h"
 
 void insertBlockVertices(std::vector<ChunkVertex> &chunkVertices, std::array<bool, 6> &facesToDraw,
                          glm::vec3 &blockPos, uint8_t color[4]) {
