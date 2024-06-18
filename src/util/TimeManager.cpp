@@ -50,7 +50,7 @@ float TimeManager::finishTimer(const std::string& name) {
 
 void TimeManager::addTimeToProfiler(const std::string& name, const float time) {
     if (!profilers.contains(name)) {
-        profilers[name] = TimeProfiler{};
+        profilers.try_emplace(name, TimeProfiler{});
     }
     profilers[name].addTime(time);
 }
