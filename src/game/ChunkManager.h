@@ -7,6 +7,10 @@
 #include <glm/glm.hpp>
 
 #include "Block.h"
+#include "Block.h"
+#include "Block.h"
+#include "Block.h"
+#include "Block.h"
 #include "Chunk.h"
 
 // hash function for vec3s so they can be used in the unordered map of ChunkManager
@@ -28,25 +32,25 @@ public:
 
     void createChunk(const glm::vec3 &worldPos);
 
-    void fillChunk(const glm::vec3 &worldPos, Block block);
+    void fillChunk(const glm::vec3 &worldPos, const glm::vec3 &position, const Block &block);
 
-    void meshChunk(Chunk &chunk);
+    void meshChunk(Chunk &chunk, const glm::vec3 &position);
 
     void meshAllChunks();
 
     uint32_t chunkCount() const;
 
-    void addBlock(const Block &block);
+    void addBlock(const glm::vec3 &position, const Block &block);
 
-    static OctreeNode *createPathToBlock(const Chunk *chunk, const Block &block);
+    static Block *createPathToBlock(const Chunk *chunk, const glm::vec3 &position);
 
-    Block getBlock(const glm::vec3 &worldPos);
+    static Block getBlock(const InternalNode *treeRoot, int x, int y, int z);
 
     bool hasBlock(const glm::vec3 &worldPos);
 
     void removeBlock(const glm::vec3 &worldPos);
 
-    void generateBlockMesh(Chunk &chunk, Block &block, std::array<bool, 6> &facesToDraw);
+    void generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent, Block block, std::array<bool, 6> &facesToDraw);
 
 private:
     OctreeNode *findOctreeNode(const glm::vec3 &worldPos);
