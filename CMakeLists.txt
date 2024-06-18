@@ -35,7 +35,6 @@ add_executable(vulkan_voxel
         src/util/InputManager.h
         src/game/World.h
         src/game/World.cpp
-        src/game/Block.cpp
         src/game/Block.h
         src/game/ChunkManager.cpp
         src/game/ChunkManager.h
