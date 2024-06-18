@@ -3,12 +3,8 @@
 #include <glm/vec3.hpp>
 
 struct Block {
-    glm::vec3 position;
-    uint8_t color[4];
-
-    static void setColor(Block &block, uint8_t r, uint8_t g, uint8_t b);
-
-    static void copyBlock(Block &block, const Block &blockInfo);
+    int8_t position[3];
+    uint8_t color[4]; //color[3] currently used for debugging
 };
 
 
