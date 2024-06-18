@@ -1,6 +1,7 @@
 #include <array>
 #include <stdexcept>
 #include <limits>
+#include <algorithm>
 
 #include "SwapChain.h"
 #include "VulkanUtil.h"

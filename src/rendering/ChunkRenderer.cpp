@@ -1,7 +1,7 @@
 #include "ChunkRenderer.h"
 
 
-#include <iostream>
+#include <cstring>
 #include <cstdint>
 #include <fstream>
 
@@ -31,6 +31,9 @@ void ChunkRenderer::init(VkDescriptorPool &descriptorPool, VkRenderPass &renderP
 void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo) {
     resizeBuffers();
     updateBuffers();
+    if (VertexPool::getOccupiedVertexRanges().empty()) {
+        return;
+    }
 
     const VkBuffer vertexBuffers[] = {vertexBuffer};
     constexpr VkDeviceSize offsets[] = {0};
