@@ -45,6 +45,7 @@ void ChunkManager::meshChunk(Chunk &chunk, const glm::vec3 &position) {
     const int xStart = static_cast<int>(position.x - CHUNK_SHIFT);
     const int yStart = static_cast<int>(position.y - CHUNK_SHIFT);
     const int zStart = static_cast<int>(position.z - CHUNK_SHIFT);
+    
     for (int x = xStart; x < xStart + CHUNK_SIZE; x++) {
         for (int z = zStart; z < zStart + CHUNK_SIZE; z++) {
             for (int y = yStart; y < yStart + CHUNK_SIZE; y++) {
@@ -62,25 +63,25 @@ void ChunkManager::generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent
     const int xPos = (block.position[0] < 0 ? block.position[0] + 1 : block.position[0]) + chunkExtent.x;
     const int yPos = (block.position[1] < 0 ? block.position[1] + 1 : block.position[1]) + chunkExtent.y;
     const int zPos = (block.position[2] < 0 ? block.position[2] + 1 : block.position[2]) + chunkExtent.z;
-    auto adjustedPosition = glm::vec3(xPos, yPos, zPos);
+    const auto adjustedPosition = glm::vec3(xPos, yPos, zPos);
 
     if (!hasBlock(adjustedPosition + glm::vec3(0, 1, 0))) {
-        insertBlockVertices(chunk.vertices, 0, adjustedPosition, block.color);
+        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 0);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, -1, 0))) {
-        insertBlockVertices(chunk.vertices, 1, adjustedPosition, block.color);
+        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 1);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, 0, 1))) {
-        insertBlockVertices(chunk.vertices, 2, adjustedPosition, block.color);
+        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 2);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, 0, -1))) {
-        insertBlockVertices(chunk.vertices, 3, adjustedPosition, block.color);
+        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 3);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(-1, 0, 0))) {
-        insertBlockVertices(chunk.vertices, 4, adjustedPosition, block.color);
+        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 4);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(1, 0, 0))) {
-        insertBlockVertices(chunk.vertices, 5, adjustedPosition, block.color);
+        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 5);
     }
 }
 
@@ -198,9 +199,9 @@ void ChunkManager::fillChunk(const glm::vec3 &worldPos, const glm::vec3 &positio
     }
 
     const glm::vec3 chunkCorner = chunkCenter - CHUNK_SHIFT;
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            for (int k = 0; k < 8; k++) {
+    for (int i = 0; i < CHUNK_SIZE; i++) {
+        for (int j = 0; j < CHUNK_SIZE; j++) {
+            for (int k = 0; k < CHUNK_SIZE; k++) {
                 Block newBlock = block;
                 newBlock.position[0] = static_cast<int8_t>(chunkCorner.x + static_cast<float>(i));
                 newBlock.position[1] = static_cast<int8_t>(chunkCorner.y + static_cast<float>(j));

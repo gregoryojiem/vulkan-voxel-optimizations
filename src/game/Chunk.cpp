@@ -1,11 +1,5 @@
 #include "Chunk.h"
 
-std::vector<float> SUB_INCREMENTS = {2.0f, 1.0, 0.5};
-int MAX_DEPTH = 3;
-float CHUNK_SHIFT = 3.5;
-int CHUNK_SIZE = 8;
-int HALF_CHUNK_SIZE = CHUNK_SIZE/2;
-
 OctreeNode::~OctreeNode() = default;
 
 InternalNode::InternalNode(const glm::vec3 &nodePosition) {
@@ -31,7 +25,7 @@ glm::vec3 Chunk::alignToChunkPos(int x, int y, int z) {
 }
 
 double Chunk::alignNum(const double number) {
-    return round((number - CHUNK_SHIFT) / 8) * 8 + CHUNK_SHIFT;
+    return round((number - CHUNK_SHIFT) / CHUNK_SIZE) * CHUNK_SIZE + CHUNK_SHIFT;
 }
 
 int Chunk::getOctantIndex(const glm::vec3 &blockPosition, const glm::vec3 &chunkPos) {
@@ -47,7 +41,7 @@ void Chunk::addOctantOffset(glm::vec3 &middlePosition, int octantIndex, int dept
     const float ySign = octantIndex & 2 ? 1 : -1;
     const float zSign = octantIndex & 4 ? 1 : -1;
 
-    middlePosition.x += xSign * SUB_INCREMENTS[depth];
-    middlePosition.y += SUB_INCREMENTS[depth] * ySign;
-    middlePosition.z += SUB_INCREMENTS[depth] * zSign;
+    middlePosition.x += xSign * DEPTH_SUBDIVISIONS[depth];
+    middlePosition.y += DEPTH_SUBDIVISIONS[depth] * ySign;
+    middlePosition.z += DEPTH_SUBDIVISIONS[depth] * zSign;
 }

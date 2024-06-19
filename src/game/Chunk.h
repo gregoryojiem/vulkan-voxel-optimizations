@@ -1,15 +1,26 @@
 #ifndef CHUNK_H
 #define CHUNK_H
+#include <array>
 #include <vector>
 
 #include "Block.h"
 #include "../rendering/misc/Vertex.h"
 
-extern std::vector<float> SUB_INCREMENTS;
-extern int MAX_DEPTH;
-extern float CHUNK_SHIFT;
-extern int CHUNK_SIZE;
-extern int HALF_CHUNK_SIZE;
+constexpr int CHUNK_SIZE = 32;
+constexpr int HALF_CHUNK_SIZE = CHUNK_SIZE/2;
+constexpr float CHUNK_SHIFT = static_cast<float>(HALF_CHUNK_SIZE) - 0.5f;
+constexpr int MAX_DEPTH = static_cast<int>(log2(CHUNK_SIZE));
+
+template <int depth>
+constexpr auto GET_DEPTH_SUBDIVISIONS() {
+    std::array<float, depth> increments{};
+    for (int i = 0; i < depth; i++) {
+        increments[i] = static_cast<float>(CHUNK_SIZE) / std::pow(2, i + 2);
+    }
+    return increments;
+}
+
+constexpr auto DEPTH_SUBDIVISIONS = GET_DEPTH_SUBDIVISIONS<MAX_DEPTH>();
 
 struct OctreeNode {
     Block block{};

@@ -2,8 +2,10 @@
 
 #include <iostream>
 
+#include "../../game/Chunk.h"
+
 const static std::vector<uint32_t> powersOfTwo = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
-static constexpr size_t CHUNK_VERTICES_SIZE = (8 * 8 * 8) * 8;
+static constexpr size_t CHUNK_VERTICES_SIZE = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 32; //must be a power of two
 
 std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
