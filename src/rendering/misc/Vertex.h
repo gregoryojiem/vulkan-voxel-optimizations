@@ -6,7 +6,7 @@
 #include <vulkan/vulkan_core.h>
 
 struct ChunkVertex {
-    glm::vec3 pos;
+    glm::vec3 position;
     uint8_t color[4];
 
     static VkVertexInputBindingDescription getBindingDescription();
@@ -15,7 +15,7 @@ struct ChunkVertex {
 };
 
 struct TexturedVertex {
-    glm::vec2 pos;
+    glm::vec2 position;
     glm::vec3 color;
     glm::vec2 texCoord;
 
