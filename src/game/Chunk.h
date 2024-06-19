@@ -29,7 +29,6 @@ struct InternalNode final : OctreeNode {
 struct Chunk {
     OctreeNode *octree;
     std::vector<ChunkVertex> vertices;
-    std::vector<uint32_t> indices;
     bool geometryModified;
     uint32_t ID;
 

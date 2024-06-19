@@ -29,9 +29,6 @@ private:
 
     VkBuffer indexBuffer{};
     VkDeviceMemory indexBufferMemory{};
-    uint32_t indexMemorySize{};
-    VkBuffer indexStagingBuffer{};
-    VkDeviceMemory indexStagingBufferMemory{};
 
     VkBuffer drawParamsBuffer{};
     VkDeviceMemory drawParamsBufferMemory{};
@@ -40,6 +37,8 @@ private:
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void *> uniformBuffersMapped;
+
+    static void fillChunkIndices(std::vector<uint32_t>& indices);
 
     void resizeBuffers();
 

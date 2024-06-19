@@ -35,13 +35,6 @@ void insertBlockVertices(std::vector<ChunkVertex> &chunkVertices, int face, glm:
     }
 }
 
-void insertBlockIndices(std::vector<uint32_t> &chunkIndices, uint32_t startIndex) {
-    const std::array indices = {
-        startIndex + 0, startIndex + 2, startIndex + 1, startIndex + 3, startIndex + 1, startIndex + 2
-    };
-    chunkIndices.insert(chunkIndices.end(), indices.begin(), indices.end());
-}
-
 std::vector<TexturedVertex> generateTexturedQuad(glm::vec4 quadBounds, glm::vec4 texQuadBounds, glm::vec2 startPos) {
     float left = quadBounds[0];
     float bottom = quadBounds[1];

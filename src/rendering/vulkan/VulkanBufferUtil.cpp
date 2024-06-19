@@ -180,7 +180,7 @@ void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, uint
             uint32_t startByte = memoryRange.startPos * objectSize;
             copyRegion.srcOffset = startByte;
             copyRegion.dstOffset = startByte;
-            copyRegion.size = memoryRange.objectCount * objectSize;
+            copyRegion.size = memoryRange.vertexCount * objectSize;
             memoryRange.savedToVBuffer = true;
             vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
         }
@@ -231,7 +231,7 @@ void updateChunkBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, co
             const uint32_t memoryOffset = memoryRange.startPos * objectSize;
             memcpy(static_cast<char *>(data) + memoryOffset,
                    static_cast<char *>(newData) + memoryOffset,
-                   memoryRange.objectCount * objectSize);
+                   memoryRange.vertexCount * objectSize);
             regionUpdateFound = true;
         }
     }
@@ -252,12 +252,12 @@ void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize buf
     vkMapMemory(CoreRenderer::device, bufferMemory, 0, bufferSize, 0, &data);
 
     uint32_t commandIndex = 0;
-    for (auto &[chunkID, memoryRange]: VertexPool::getOccupiedIndexRanges()) {
+    for (auto &[chunkID, memoryRange]: VertexPool::getOccupiedVertexRanges()) {
         VkDrawIndexedIndirectCommand command;
-        command.indexCount = memoryRange.objectCount;
+        command.indexCount = memoryRange.indexCount;
         command.instanceCount = 1;
-        command.firstIndex = memoryRange.startPos;
-        command.vertexOffset = static_cast<int32_t>(memoryRange.offset);
+        command.firstIndex = 0;
+        command.vertexOffset = static_cast<int32_t>(memoryRange.startPos);
         command.firstInstance = 0;
         memcpy(static_cast<char *>(data) + commandIndex * sizeof(VkDrawIndexedIndirectCommand),
                &command,

@@ -39,7 +39,6 @@ void ChunkManager::createChunk(const glm::vec3 &worldPos) {
 
 void ChunkManager::meshChunk(Chunk &chunk, const glm::vec3 &position) {
     chunk.vertices = {};
-    chunk.indices = {};
     const auto chunkExtent = glm::ivec3(position.x - 0.5f, position.y - 0.5f, position.z - 0.5f);
     const InternalNode *chunkRoot = dynamic_cast<InternalNode *>(chunk.octree);
 
@@ -66,27 +65,21 @@ void ChunkManager::generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent
     auto adjustedPosition = glm::vec3(xPos, yPos, zPos);
 
     if (!hasBlock(adjustedPosition + glm::vec3(0, 1, 0))) {
-        insertBlockIndices(chunk.indices, chunk.vertices.size());
         insertBlockVertices(chunk.vertices, 0, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, -1, 0))) {
-        insertBlockIndices(chunk.indices, chunk.vertices.size());
         insertBlockVertices(chunk.vertices, 1, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, 0, 1))) {
-        insertBlockIndices(chunk.indices, chunk.vertices.size());
         insertBlockVertices(chunk.vertices, 2, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, 0, -1))) {
-        insertBlockIndices(chunk.indices, chunk.vertices.size());
         insertBlockVertices(chunk.vertices, 3, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(-1, 0, 0))) {
-        insertBlockIndices(chunk.indices, chunk.vertices.size());
         insertBlockVertices(chunk.vertices, 4, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(1, 0, 0))) {
-        insertBlockIndices(chunk.indices, chunk.vertices.size());
         insertBlockVertices(chunk.vertices, 5, adjustedPosition, block.color);
     }
 }
@@ -259,7 +252,7 @@ void ChunkManager::meshAllChunks() {
 
             TimeManager::startTimer("addToVertexPool");
             if (!chunk.vertices.empty()) {
-                VertexPool::addToVertexPool(chunk.vertices, chunk.indices, chunk.ID);
+                VertexPool::addToVertexPool(chunk.vertices, chunk.ID);
             }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
         }

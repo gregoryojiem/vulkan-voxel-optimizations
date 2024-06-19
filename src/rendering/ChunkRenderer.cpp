@@ -9,6 +9,8 @@
 #include "vulkan/VulkanUtil.h"
 #include "misc/VertexPool.h"
 
+constexpr uint32_t INDEX_BUFFER_SIZE = 8 * 8 * 8 * 36;
+
 void ChunkRenderer::init(VkDescriptorPool &descriptorPool, VkRenderPass &renderPass) {
     createUniformBuffers(uniformBuffers, uniformBuffersMemory, uniformBuffersMapped);
     createDescriptorSetLayout(descriptorSetLayout, true, false);
@@ -21,11 +23,11 @@ void ChunkRenderer::init(VkDescriptorPool &descriptorPool, VkRenderPass &renderP
         ChunkVertex::getAttributeDescriptions(),
         true, true);
     vertexMemorySize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
-    indexMemorySize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
     createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
-    createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
+    std::vector<uint32_t> indices(INDEX_BUFFER_SIZE);
+    fillChunkIndices(indices);
+    createIndexBuffer(indexBuffer, indexBufferMemory, indices.size(), indices);
     createStagingBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize);
-    createStagingBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize);
 }
 
 void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo) {
@@ -43,27 +45,34 @@ void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentF
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
                             0, 1, &descriptorSets[currentFrame], 0, nullptr);
-    const uint32_t drawCount = VertexPool::getOccupiedIndexRanges().size();
+    const uint32_t drawCount = VertexPool::getOccupiedVertexRanges().size();
     vkCmdDrawIndexedIndirect(commandBuffer, drawParamsBuffer, 0, drawCount, sizeof(VkDrawIndexedIndirectCommand));
 
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }
 
+void ChunkRenderer::fillChunkIndices(std::vector<uint32_t>& indices) {
+    int indexStartPos = 0;
+    for (int i = 0; i < indices.size(); i += 6) {
+        indices.at(i) = indexStartPos;
+        indices.at(i+1) = indexStartPos+2;
+        indices.at(i+2) = indexStartPos+1;
+        indices.at(i+3) = indexStartPos+3;
+        indices.at(i+4) = indexStartPos+1;
+        indices.at(i+5) = indexStartPos+2;
+        indexStartPos += 4;
+    }
+}
+
 void ChunkRenderer::resizeBuffers() {
     uint32_t verticesSize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
-    uint32_t indicesSize = sizeof(globalChunkIndices[0]) * globalChunkIndices.size();
-    uint32_t drawParamsSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedIndexRanges().size();
+    uint32_t drawParamsSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedVertexRanges().size();
 
     //todo benchmark with fixed size buffers here
     if (verticesSize > vertexMemorySize) {
         vertexMemorySize = verticesSize;
         createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
         createStagingBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize);
-    }
-    if (indicesSize > indexMemorySize) {
-        indexMemorySize = indicesSize;
-        createIndexBuffer(indexBuffer, indexBufferMemory, indexMemorySize, globalChunkIndices);
-        createStagingBuffer(indexStagingBuffer, indexStagingBufferMemory, indexMemorySize);
     }
     if (drawParamsSize > drawParamsMemorySize) {
         drawParamsMemorySize = drawParamsSize;
@@ -77,9 +86,7 @@ void ChunkRenderer::updateBuffers() const {
     }
     updateChunkBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory, globalChunkVertices.data(),
                       vertexMemorySize, sizeof(ChunkVertex), VertexPool::getOccupiedVertexRanges());
-    updateChunkBuffer(indexBuffer, indexStagingBuffer, indexStagingBufferMemory, globalChunkIndices.data(),
-                      indexMemorySize, sizeof(globalChunkIndices[0]), VertexPool::getOccupiedIndexRanges());
-    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedIndexRanges().size());
+    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size());
     VertexPool::newUpdate = false;
 }
 
@@ -89,7 +96,6 @@ void ChunkRenderer::cleanup(const VkDevice &device, uint32_t maxFramesInFlight) 
     }
 
     destroyBuffer(indexBuffer, indexBufferMemory);
-    destroyBuffer(indexStagingBuffer, indexStagingBufferMemory);
     destroyBuffer(vertexBuffer, vertexBufferMemory);
     destroyBuffer(vertexStagingBuffer, vertexStagingBufferMemory);
     destroyBuffer(drawParamsBuffer, drawParamsBufferMemory);
