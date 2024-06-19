@@ -7,10 +7,6 @@
 #include <glm/glm.hpp>
 
 #include "Block.h"
-#include "Block.h"
-#include "Block.h"
-#include "Block.h"
-#include "Block.h"
 #include "Chunk.h"
 
 // hash function for vec3s so they can be used in the unordered map of ChunkManager
@@ -50,7 +46,7 @@ public:
 
     void removeBlock(const glm::vec3 &worldPos);
 
-    void generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent, Block block, std::array<bool, 6> &facesToDraw);
+    void generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent, Block block);
 
 private:
     OctreeNode *findOctreeNode(const glm::vec3 &worldPos);

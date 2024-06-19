@@ -40,7 +40,6 @@ void ChunkManager::createChunk(const glm::vec3 &worldPos) {
 void ChunkManager::meshChunk(Chunk &chunk, const glm::vec3 &position) {
     chunk.vertices = {};
     chunk.indices = {};
-    std::array<bool, 6> facesToDraw{};
     const auto chunkExtent = glm::ivec3(position.x - 0.5f, position.y - 0.5f, position.z - 0.5f);
     const InternalNode *chunkRoot = dynamic_cast<InternalNode *>(chunk.octree);
 
@@ -52,7 +51,7 @@ void ChunkManager::meshChunk(Chunk &chunk, const glm::vec3 &position) {
             for (int y = yStart; y < yStart + CHUNK_SIZE; y++) {
                 const Block block = getBlock(chunkRoot, x, y, z);
                 if (block.color[3] != 0) {
-                    generateBlockMesh(chunk, chunkExtent, block, facesToDraw);
+                    generateBlockMesh(chunk, chunkExtent, block);
                 }
             }
         }
@@ -60,44 +59,35 @@ void ChunkManager::meshChunk(Chunk &chunk, const glm::vec3 &position) {
     chunk.geometryModified = false;
 }
 
-void ChunkManager::generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent, Block block,
-                                     std::array<bool, 6> &facesToDraw) {
-    std::fill(facesToDraw.begin(), facesToDraw.end(), false);
-
+void ChunkManager::generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkExtent, Block block) {
     const int xPos = (block.position[0] < 0 ? block.position[0] + 1 : block.position[0]) + chunkExtent.x;
     const int yPos = (block.position[1] < 0 ? block.position[1] + 1 : block.position[1]) + chunkExtent.y;
     const int zPos = (block.position[2] < 0 ? block.position[2] + 1 : block.position[2]) + chunkExtent.z;
     auto adjustedPosition = glm::vec3(xPos, yPos, zPos);
 
-    int faceCount = 0;
     if (!hasBlock(adjustedPosition + glm::vec3(0, 1, 0))) {
-        facesToDraw[0] = true;
-        faceCount++;
+        insertBlockIndices(chunk.indices, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, 0, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, -1, 0))) {
-        facesToDraw[1] = true;
-        faceCount++;
+        insertBlockIndices(chunk.indices, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, 1, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, 0, 1))) {
-        facesToDraw[2] = true;
-        faceCount++;
+        insertBlockIndices(chunk.indices, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, 2, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(0, 0, -1))) {
-        facesToDraw[3] = true;
-        faceCount++;
+        insertBlockIndices(chunk.indices, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, 3, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(-1, 0, 0))) {
-        facesToDraw[4] = true;
-        faceCount++;
+        insertBlockIndices(chunk.indices, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, 4, adjustedPosition, block.color);
     }
     if (!hasBlock(adjustedPosition + glm::vec3(1, 0, 0))) {
-        facesToDraw[5] = true;
-        faceCount++;
-    }
-
-    if (faceCount > 0) {
-        insertBlockIndices(chunk.indices, facesToDraw, chunk.vertices.size());
-        insertBlockVertices(chunk.vertices, facesToDraw, adjustedPosition, block.color);
+        insertBlockIndices(chunk.indices, chunk.vertices.size());
+        insertBlockVertices(chunk.vertices, 5, adjustedPosition, block.color);
     }
 }
 
