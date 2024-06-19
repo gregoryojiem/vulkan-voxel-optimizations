@@ -9,30 +9,28 @@
 World::World() : seed(2) {
 }
 
-static Block greenBlock = {glm::vec3(0.0f, 0.0f, 0.0f), 0, 150, 0};
-
 uint32_t World::generateTerrainFromNoise(const int range) {
     const int halfRange = range / 2;
-    Block terrainBlock = greenBlock;
     uint32_t blocksGenerated = 0;
+    Block terrainBlock{};
 
     for (int x = -halfRange; x < halfRange; x++) {
         for (int z = -halfRange; z < halfRange; z++) {
             float noiseInfo = noise.GetNoise(static_cast<float>(x), static_cast<float>(z));
             noiseInfo = (noiseInfo + 1) / 2;
 
-            const int height = static_cast<int>(noiseInfo * 15);
-
+            const int height = static_cast<int>(noiseInfo * 30);
             for (int y = height; y <= height; y++) {
                 int redBlueColor = (y * 4) / 8 * 8;
                 int greenColor = (y * 4 + 50) / 8 * 8;
-                redBlueColor = std::clamp(redBlueColor, 0, 255);
-                greenColor = std::clamp(greenColor, 0, 255);
-
-                terrainBlock.position = {x, y, z};
-                Block::setColor(terrainBlock, redBlueColor, greenColor, redBlueColor);
-
-                addBlock(terrainBlock);
+                const uint8_t redBlueColorClamped = std::clamp(redBlueColor, 0, 255);
+                const uint8_t greenColorClamped = std::clamp(greenColor, 0, 255);
+                terrainBlock.color[0] = redBlueColorClamped;
+                terrainBlock.color[1] = greenColorClamped;
+                terrainBlock.color[2] = redBlueColorClamped;
+                terrainBlock.color[3] = 1;
+                auto blockPosition = glm::vec3(x, y, z);
+                addBlock(blockPosition, terrainBlock);
                 blocksGenerated++;
             }
         }
@@ -43,8 +41,6 @@ uint32_t World::generateTerrainFromNoise(const int range) {
 
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    //addBlock(yellowBlock);
-    //chunkManager.fillChunk(yellowBlock.position, yellowBlock);
 
     constexpr int range = 1000;
     std::cout << "Started generating terrain! ";
@@ -65,14 +61,15 @@ void World::init() {
     TimeManager::printAllProfiling();
 }
 
-static int test = 0;
+static int blockCounter = 0;
 
 void World::mainLoop() {
-    test++;
-    addBlock({glm::vec3(test, 10, 0), {255, 0, 0}});
-    chunkManager.meshAllChunks();
+    //blockCounter++;
+    //auto position = glm::vec3(blockCounter, 10, 0);
+    //addBlock(position, {position, {255, 0, 0, 1}});
+    //chunkManager.meshAllChunks();
 }
 
-void World::addBlock(const Block block) {
-    chunkManager.addBlock(block);
+void World::addBlock(const glm::vec3 &position, const Block block) {
+    chunkManager.addBlock(position, block);
 }

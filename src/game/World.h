@@ -13,7 +13,7 @@ public:
 
     void mainLoop();
 
-    void addBlock(Block block);
+    void addBlock(const glm::vec3& position, Block block);
 
 private:
     ChunkManager chunkManager;
