@@ -7,7 +7,7 @@
 
 int DEFAULT_WIDTH = 1280;
 int DEFAULT_HEIGHT = 720;
-const int MAX_FRAMES_IN_FLIGHT = 2;
+const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 static std::vector deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -49,12 +49,12 @@ void CoreRenderer::init() {
     createSyncObjects(imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences);
 }
 
-uint32_t CoreRenderer::beginDraw() {
+int CoreRenderer::beginDraw() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapChain.getSwapChain(), UINT64_MAX,
-                                            imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    const VkResult result = vkAcquireNextImageKHR(device, swapChain.getSwapChain(), UINT64_MAX,
+                                                  imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         swapChain.recreate(window, device, physicalDevice, surface, renderPass);
@@ -69,7 +69,7 @@ uint32_t CoreRenderer::beginDraw() {
     VkCommandBuffer commandBuffer = commandBuffers[currentFrame];
     vkResetCommandBuffer(commandBuffer, 0);
     beginRecording(commandBuffer);
-    return imageIndex;
+    return static_cast<int>(imageIndex);
 }
 
 void CoreRenderer::finishDraw(uint32_t imageIndex) {
@@ -170,7 +170,7 @@ void CoreRenderer::finishRecording(VkCommandBuffer commandBuffer) {
 void CoreRenderer::cleanup() {
     vkDeviceWaitIdle(device);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);

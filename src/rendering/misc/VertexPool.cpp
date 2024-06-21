@@ -9,7 +9,7 @@ static constexpr size_t CHUNK_VERTICES_SIZE = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SI
 
 std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
-std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES_SIZE, CHUNK_VERTICES_SIZE}};
+std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES_SIZE, 0, 0, false}};
 bool VertexPool::newUpdate;
 
 void VertexPool::addToVertexPool(const std::vector<ChunkVertex> &vertices, uint32_t chunkID) {
@@ -84,7 +84,7 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t
 }
 
 void VertexPool::initMemoryRangeInfo(ChunkMemoryRange &rangeToUse, uint32_t objectCount) {
-    rangeToUse.indexCount = objectCount + objectCount/2;
+    rangeToUse.indexCount = objectCount + objectCount / 2;
     rangeToUse.vertexCount = objectCount;
     rangeToUse.savedToVBuffer = false;
 }
@@ -93,17 +93,14 @@ void VertexPool::initMemoryRangeInfo(ChunkMemoryRange &rangeToUse, uint32_t obje
 // returns a memory range == required space, and adds the rest from the split to the free ranges
 ChunkMemoryRange VertexPool::splitUpAvailableMemory(std::vector<ChunkMemoryRange> &freeMemoryRanges,
                                                     const ChunkMemoryRange *rangeToSplit, uint32_t requiredSpace) {
-    const ChunkMemoryRange newRange{rangeToSplit->startPos, rangeToSplit->startPos + requiredSpace};
+    const ChunkMemoryRange newRange{rangeToSplit->startPos, rangeToSplit->startPos + requiredSpace, 0, 0, false};
 
     uint32_t remainingSpace = rangeToSplit->endPos - (rangeToSplit->startPos + requiredSpace);
     uint32_t nextRangeStartPos = rangeToSplit->startPos + requiredSpace;
     uint32_t currentPowerOf2 = requiredSpace;
 
     while (remainingSpace > 0) {
-        freeMemoryRanges.push_back({
-            nextRangeStartPos,
-            nextRangeStartPos + currentPowerOf2
-        });
+        freeMemoryRanges.push_back({nextRangeStartPos, nextRangeStartPos + currentPowerOf2, 0, 0, false});
         remainingSpace -= currentPowerOf2;
         nextRangeStartPos += currentPowerOf2;
         currentPowerOf2 *= 2;
@@ -119,5 +116,5 @@ ChunkMemoryRange VertexPool::resizePool() {
     const uint32_t currentSize = globalChunkVertices.size();
     const uint32_t goalSize = currentSize + CHUNK_VERTICES_SIZE;
     globalChunkVertices.resize(goalSize);
-    return {currentSize, goalSize};
+    return {currentSize, goalSize, 0, 0, false};
 }

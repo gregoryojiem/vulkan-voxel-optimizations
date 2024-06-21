@@ -9,6 +9,171 @@
 #include "../CoreRenderer.h"
 #include "VulkanDebugger.h"
 
+// SUPPORT/QUERY FUNCTIONS
+QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto &queueFamily: queueFamilies) {
+        if (indices.isComplete()) {
+            break;
+        }
+
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physDevice, i, surface, &presentSupport);
+
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface) {
+    SwapChainSupportDetails details;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physDevice, surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, nullptr);
+
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, nullptr);
+
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, details.presentModes.data());
+    }
+    return details;
+}
+
+uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(CoreRenderer::physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if (typeFilter & 1 << i && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("failed to find suitable memory type!");
+}
+
+bool checkDeviceExtensionSupport(const VkPhysicalDevice &physDevice, std::vector<const char *> &deviceExtensions) {
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto &extension: availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
+VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
+                             VkImageTiling tiling, VkFormatFeatureFlags features) {
+    for (VkFormat format: candidates) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(CoreRenderer::physicalDevice, format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+            return format;
+        }
+
+        if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("failed to find supported format!");
+}
+
+VkFormat findDepthFormat() {
+    return findSupportedFormat(
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+std::vector<const char *> getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (VulkanDebugger::enabled()) {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
+bool isDeviceSuitable(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface,
+                      std::vector<const char *> &deviceExtensions) {
+    QueueFamilyIndices indices = findQueueFamilies(physDevice, surface);
+
+    bool extensionsSupported = checkDeviceExtensionSupport(physDevice, deviceExtensions);
+
+    bool swapChainAdequate = false;
+    if (extensionsSupported) {
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physDevice, surface);
+        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+    }
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    vkGetPhysicalDeviceFeatures(physDevice, &deviceFeatures);
+    bool multiDrawIndirectSupported = deviceFeatures.multiDrawIndirect;
+    bool samplerAnisotropySupported = deviceFeatures.samplerAnisotropy;
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate && multiDrawIndirectSupported
+           && samplerAnisotropySupported;
+}
+
+std::vector<char> readFile(const std::string &filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    const long long fileSize = file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+    file.close();
+
+    return buffer;
+}
+
+bool QueueFamilyIndices::isComplete() const {
+    return graphicsFamily.has_value() && presentFamily.has_value();
+}
+
 // VULKAN CORE CREATION FUNCTIONS (these are dependency free)
 GLFWwindow *initWindow(void *userPtr, GLFWframebuffersizefun resizeCallback, int width, int height) {
     glfwInit();
@@ -340,7 +505,7 @@ void createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, bool 
 
 void createDescriptorPool(VkDescriptorPool &descriptorPool, const std::vector<VkDescriptorType> &poolTypes) {
     std::vector<VkDescriptorPoolSize> poolSizes(poolTypes.size());
-    for (int i = 0; i < poolTypes.size(); i++) {
+    for (uint32_t i = 0; i < poolTypes.size(); i++) {
         VkDescriptorPoolSize poolSize{};
         poolSize.type = poolTypes.at(i);
         poolSize.descriptorCount = poolTypes.size();
@@ -525,14 +690,6 @@ void createGraphicsPipeline(VkPipelineLayout &pipelineLayout, VkPipeline &graphi
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(CoreRenderer::getWindowWidth());
-    viewport.height = static_cast<float>(CoreRenderer::getWindowHeight());
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
@@ -775,171 +932,6 @@ void transitionImageLayout(const VkImage &image, const VkImageLayout oldLayout, 
     );
 
     endSingleTimeCommands(commandBuffer);
-}
-
-// SUPPORT/QUERY FUNCTIONS
-QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface) {
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for (const auto &queueFamily: queueFamilies) {
-        if (indices.isComplete()) {
-            break;
-        }
-
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physDevice, i, surface, &presentSupport);
-
-        if (presentSupport) {
-            indices.presentFamily = i;
-        }
-
-        i++;
-    }
-
-    return indices;
-}
-
-SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface) {
-    SwapChainSupportDetails details;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physDevice, surface, &details.capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, nullptr);
-
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, nullptr);
-
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, details.presentModes.data());
-    }
-    return details;
-}
-
-uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(CoreRenderer::physicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if (typeFilter & 1 << i && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
-}
-
-VkFormat findDepthFormat() {
-    return findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-    );
-}
-
-VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
-                             VkImageTiling tiling, VkFormatFeatureFlags features) {
-    for (VkFormat format: candidates) {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(CoreRenderer::physicalDevice, format, &props);
-
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-            return format;
-        }
-
-        if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-            return format;
-        }
-    }
-
-    throw std::runtime_error("failed to find supported format!");
-}
-
-std::vector<const char *> getRequiredExtensions() {
-    uint32_t glfwExtensionCount = 0;
-    const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-    if (VulkanDebugger::enabled()) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    return extensions;
-}
-
-bool isDeviceSuitable(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface,
-                      std::vector<const char *> &deviceExtensions) {
-    QueueFamilyIndices indices = findQueueFamilies(physDevice, surface);
-
-    bool extensionsSupported = checkDeviceExtensionSupport(physDevice, deviceExtensions);
-
-    bool swapChainAdequate = false;
-    if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physDevice, surface);
-        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-    }
-
-    VkPhysicalDeviceFeatures deviceFeatures{};
-    vkGetPhysicalDeviceFeatures(physDevice, &deviceFeatures);
-    bool multiDrawIndirectSupported = deviceFeatures.multiDrawIndirect;
-    bool samplerAnisotropySupported = deviceFeatures.samplerAnisotropy;
-
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && multiDrawIndirectSupported
-           && samplerAnisotropySupported;
-}
-
-bool checkDeviceExtensionSupport(const VkPhysicalDevice &physDevice, std::vector<const char *> &deviceExtensions) {
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, nullptr);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, availableExtensions.data());
-
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-    for (const auto &extension: availableExtensions) {
-        requiredExtensions.erase(extension.extensionName);
-    }
-
-    return requiredExtensions.empty();
-}
-
-std::vector<char> readFile(const std::string &filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    const long long fileSize = file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-
-    return buffer;
-}
-
-bool QueueFamilyIndices::isComplete() const {
-    return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
 //GETTERS

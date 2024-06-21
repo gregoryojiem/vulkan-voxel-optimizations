@@ -9,11 +9,6 @@
 #include "../misc/VertexPool.h"
 
 // OBJECT CREATION FUNCTIONS
-static void createBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize size,
-                         VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-
-extern void destroyBuffer(const VkBuffer &buffer, const VkDeviceMemory &bufferMemory);
-
 template<typename VertexType>
 extern void createVertexBuffer(VkBuffer &vertexBuffer, VkDeviceMemory &vertexBufferMemory, VkDeviceSize bufferSize,
                                const std::vector<VertexType> &vertices);
@@ -33,6 +28,9 @@ extern void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void*
 
 extern void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int &width, int &height,
                                       const std::string &path);
+
+//DELETION FUNCTIONS
+extern void destroyBuffer(const VkBuffer &buffer, const VkDeviceMemory &bufferMemory);
 
 //GENERAL UTILITY FUNCTIONS
 extern void copyBuffer(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, VkDeviceSize size);

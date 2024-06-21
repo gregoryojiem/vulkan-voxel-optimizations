@@ -123,7 +123,7 @@ void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
     }
 }
 
-void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void* newData, int width, int height) {
+void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void *newData, int width, int height) {
     uint32_t imageSize = width * height * 4;
 
     createImage(image, imageMemory, width, height,

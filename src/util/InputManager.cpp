@@ -13,7 +13,7 @@ int InputState::downState() const {
     return spaceState && shiftState;
 }
 
-void InputHandler::init(GLFWwindow* window) {
+void InputHandler::init(GLFWwindow *window) {
     lockMouse(window);
 
     if (glfwRawMouseMotionSupported())
@@ -24,8 +24,10 @@ void InputHandler::init(GLFWwindow* window) {
     glfwSetCursorPosCallback(window, updateCursor);
 }
 
-void InputHandler::updateKeyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (!mouseLocked) { //todo maybe change this to while window visible
+void InputHandler::updateKeyboard(__attribute__((unused)) GLFWwindow *window, int key,
+                                  __attribute__((unused)) int scancode, int action, __attribute__((unused)) int mods) {
+    if (!mouseLocked) {
+        //todo maybe change this to while window visible
         return;
     }
 
@@ -53,7 +55,8 @@ void InputHandler::updateKeyboard(GLFWwindow* window, int key, int scancode, int
     }
 }
 
-void InputHandler::updateMouse(GLFWwindow* window, int button, int action, int mods) {
+void InputHandler::updateMouse(__attribute__((unused)) GLFWwindow *window, int button, int action,
+                               __attribute__((unused)) int mods) {
     switch (button) {
         case GLFW_MOUSE_BUTTON_LEFT:
             currentInputs.lmbState = action;
@@ -66,13 +69,13 @@ void InputHandler::updateMouse(GLFWwindow* window, int button, int action, int m
     }
 }
 
-void InputHandler::updateCursor(GLFWwindow* window, double xpos, double ypos)
-{
+void InputHandler::updateCursor(GLFWwindow *window, double xpos, double ypos) {
     currentInputs.xDelta = xpos - lastPosX;
     currentInputs.yDelta = ypos - lastPosY;
     lastPosX = xpos;
     lastPosY = ypos;
-    if (currentInputs.xDelta > 100) { //todo remove once title is set-up
+    if (currentInputs.xDelta > 100) {
+        //todo remove once title is set-up
         currentInputs.xDelta = 0;
         currentInputs.yDelta = 0;
     }
@@ -87,12 +90,12 @@ InputState InputHandler::getState() {
     return currentInputs;
 }
 
-void InputHandler::lockMouse(GLFWwindow* window) {
+void InputHandler::lockMouse(GLFWwindow *window) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     mouseLocked = true;
 }
 
-void InputHandler::unlockMouse(GLFWwindow* window) {
+void InputHandler::unlockMouse(GLFWwindow *window) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     mouseLocked = false;
 }

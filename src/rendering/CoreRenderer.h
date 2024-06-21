@@ -10,7 +10,7 @@
 
 extern int DEFAULT_WIDTH;
 extern int DEFAULT_HEIGHT;
-const extern int MAX_FRAMES_IN_FLIGHT;
+const extern uint32_t MAX_FRAMES_IN_FLIGHT;
 
 class CoreRenderer {
 public:
@@ -34,7 +34,7 @@ public:
 
     void init();
 
-    static uint32_t beginDraw();
+    static int beginDraw();
 
     static void finishDraw(uint32_t imageIndex);
 

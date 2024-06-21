@@ -13,7 +13,7 @@ void MainRenderer::init() {
 void MainRenderer::draw() {
     float deltaTime = TimeManager::setDeltaTime();
     camera.update(deltaTime);
-    uint32_t imageIndex = CoreRenderer::beginDraw();
+    int imageIndex = CoreRenderer::beginDraw();
     if (imageIndex == -1) {
         return;
     }

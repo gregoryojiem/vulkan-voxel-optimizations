@@ -90,19 +90,6 @@ extern uint32_t findMemoryType(uint32_t typeFilter,
 
 extern VkFormat findDepthFormat();
 
-static VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
-                                    VkImageTiling tiling, VkFormatFeatureFlags features);
-
-static std::vector<const char *> getRequiredExtensions();
-
-static bool isDeviceSuitable(const VkPhysicalDevice &physDevice, const VkSurfaceKHR &surface,
-                             std::vector<const char *> &deviceExtensions);
-
-static bool checkDeviceExtensionSupport(const VkPhysicalDevice &physDevice,
-                                        std::vector<const char *> &deviceExtensions);
-
-static std::vector<char> readFile(const std::string &filename);
-
 //GETTERS
 extern uint32_t getWindowWidth();
 

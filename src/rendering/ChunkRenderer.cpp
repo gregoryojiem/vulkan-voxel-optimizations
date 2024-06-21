@@ -54,7 +54,7 @@ void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentF
 
 void ChunkRenderer::fillChunkIndices(std::vector<uint32_t>& indices) {
     int indexStartPos = 0;
-    for (int i = 0; i < indices.size(); i += 6) {
+    for (uint32_t i = 0; i < indices.size(); i += 6) {
         indices.at(i) = indexStartPos;
         indices.at(i+1) = indexStartPos+2;
         indices.at(i+2) = indexStartPos+1;
