@@ -14,7 +14,7 @@ My current goal is implementing the sparse voxel octree (SVO) system described i
 
 - [x] **Vertex pooling system:** Finished. It's important for performance reasons to minimize CPU - GPU memory transfer. With my VertexPool class, I'm able to dynamically assign memory ranges to chunk vertices, only updating the required memory ranges. 
 
-- [x] **Greedy octree meshing**: This involves developing binary greedy meshing algorithms for SVOs, intended to be compatible with pointerless SVOs in the future. Currently a WIP. 
+- [ ] **Greedy octree meshing**: This involves developing binary greedy meshing algorithms for SVOs, intended to be compatible with pointerless SVOs in the future. Currently a WIP. 
 
 ### Future Goals
 
