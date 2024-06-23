@@ -68,3 +68,8 @@ target_link_libraries(vulkan_voxel
         ${Vulkan_LIBRARIES}
         glfw
 )
+
+set(DEBUG_OPTIONS "-O0 -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter")
+set(RELEASE_OPTIONS "-O3")
+target_compile_options(vulkan_voxel PUBLIC $<$<CONFIG:DEBUG>:SHELL:${DEBUG_OPTIONS}>)
+target_compile_options(vulkan_voxel PUBLIC $<$<CONFIG:RELEASE>:SHELL:${RELEASE_OPTIONS}>)
