@@ -8,8 +8,13 @@
 
 constexpr int CHUNK_SIZE = 32;
 constexpr int HALF_CHUNK_SIZE = CHUNK_SIZE/2;
+constexpr int MAX_DEPTH = static_cast<uint32_t>(log2(CHUNK_SIZE));
 constexpr float CHUNK_SHIFT = static_cast<float>(HALF_CHUNK_SIZE) - 0.5f;
-constexpr int MAX_DEPTH = static_cast<int>(log2(CHUNK_SIZE));
+constexpr int CHUNK_SIZE_PADDED = CHUNK_SIZE + 2;
+constexpr int CHUNK_SIZE_PADDED_2 = CHUNK_SIZE_PADDED * CHUNK_SIZE_PADDED;
+constexpr int CHUNK_SIZE_PADDED_3 = CHUNK_SIZE_PADDED * CHUNK_SIZE_PADDED * CHUNK_SIZE_PADDED;
+constexpr int MAX_QUADS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE / 2 * 6;
+constexpr int CHUNK_SIZE_3 = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 template <int depth>
 constexpr auto GET_DEPTH_SUBDIVISIONS() {
@@ -40,7 +45,7 @@ struct InternalNode final : OctreeNode {
 struct Chunk {
     OctreeNode *octree;
     std::vector<ChunkVertex> vertices;
-    bool geometryModified;
+    bool notMeshed;
     uint32_t ID;
 
     ~Chunk();
