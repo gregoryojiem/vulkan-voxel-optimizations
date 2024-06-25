@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Vertex.h"
+#include "../../game/Chunk.h"
 
 extern std::vector<ChunkVertex> globalChunkVertices;
 
@@ -20,7 +21,7 @@ class VertexPool {
 public:
     static bool newUpdate;
 
-    static void addToVertexPool(const std::vector<ChunkVertex> &vertices, uint32_t chunkID);
+    static void addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], uint32_t vertexCount, uint32_t chunkID);
 
     static std::unordered_map<uint32_t, ChunkMemoryRange> &getOccupiedVertexRanges();
 

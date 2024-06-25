@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include "../../game/Chunk.h"
-
 const static std::vector<uint32_t> powersOfTwo = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
 static constexpr size_t CHUNK_VERTICES_SIZE = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 32; //must be a power of two
 
@@ -12,10 +10,10 @@ std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
 std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES_SIZE, 0, 0, false}};
 bool VertexPool::newUpdate;
 
-void VertexPool::addToVertexPool(const std::vector<ChunkVertex> &vertices, uint32_t chunkID) {
+void VertexPool::addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], uint32_t vertexCount, uint32_t chunkID) {
     const ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
-                                                                      vertices.size());
-    std::copy(vertices.begin(), vertices.end(), globalChunkVertices.begin() + vertexRangeToUse.startPos);
+                                                                      vertexCount);
+    std::copy_n(chunkVertices, vertexCount, globalChunkVertices.begin() + vertexRangeToUse.startPos);
     newUpdate = true;
 }
 
