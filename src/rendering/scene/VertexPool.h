@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Vertex.h"
-#include "../../game/Chunk.h"
+#include "../../core/Chunk.h"
 
 extern std::vector<ChunkVertex> globalChunkVertices;
 

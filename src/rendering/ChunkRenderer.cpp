@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <fstream>
 
-#include "../game/Chunk.h"
+#include "../core/Chunk.h"
 #include "vulkan/VulkanBufferUtil.h"
 #include "vulkan/VulkanUtil.h"
 #include "scene/VertexPool.h"
