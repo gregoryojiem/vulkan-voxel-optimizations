@@ -19,8 +19,8 @@ uint32_t World::generateTerrainFromNoise(const int range) {
             float noiseInfo = noise.GetNoise(static_cast<float>(x), static_cast<float>(z));
             noiseInfo = (noiseInfo + 1) / 2;
 
-            const int height = static_cast<int>(noiseInfo * 30);
-            for (int y = height; y <= height; y++) {
+            const int height = static_cast<int>(noiseInfo * 10);
+            for (int y = 0; y <= height; y++) {
                 int redBlueColor = (y * 4) / 8 * 8;
                 int greenColor = (y * 4 + 50) / 8 * 8;
                 const uint8_t redBlueColorClamped = std::clamp(redBlueColor, 0, 255);
@@ -28,7 +28,7 @@ uint32_t World::generateTerrainFromNoise(const int range) {
                 terrainBlock.color[0] = redBlueColorClamped;
                 terrainBlock.color[1] = greenColorClamped;
                 terrainBlock.color[2] = redBlueColorClamped;
-                terrainBlock.color[3] = 1;
+                terrainBlock.initialized = true;
                 auto blockPosition = glm::vec3(x, y, z);
                 addBlock(blockPosition, terrainBlock);
                 blocksGenerated++;
@@ -42,7 +42,7 @@ uint32_t World::generateTerrainFromNoise(const int range) {
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
-    constexpr int range = 1000;
+    constexpr int range = 5000;
     std::cout << "Started generating terrain! ";
 
     TimeManager::startTimer("generateTerrain");
@@ -54,19 +54,17 @@ void World::init() {
 
     std::cout << "Started meshing!\n";
 
-    TimeManager::startTimer("meshAllChunks");
     chunkManager.meshAllChunks();
-    TimeManager::addTimeToProfiler("meshAllChunks", TimeManager::finishTimer("meshAllChunks"));
 
     TimeManager::printAllProfiling();
 }
 
-static int blockCounter = 0;
+//static int blockCounter = 0;
 
 void World::mainLoop() {
     //blockCounter++;
     //auto position = glm::vec3(blockCounter, 10, 0);
-    //addBlock(position, {position, {255, 0, 0, 1}});
+    //addBlock(position, {0, 0, 0, 255, 0, 0, 1});
     //chunkManager.meshAllChunks();
 }
 
