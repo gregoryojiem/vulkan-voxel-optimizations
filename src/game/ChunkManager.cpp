@@ -1,6 +1,7 @@
 #include "ChunkManager.h"
 
 #include <iostream>
+#include <stack>
 #include <stdexcept>
 #include <glm/common.hpp>
 
@@ -32,93 +33,68 @@ void ChunkManager::createChunk(const glm::vec3 &worldPos) {
     }
 
     chunks[worldPos] = Chunk();
-    chunks[worldPos].octree = new InternalNode(glm::vec3(15.5f, 15.5f, 15.5f));
+    chunks[worldPos].octree = new OctreeNode(glm::vec3(15.5f, 15.5f, 15.5f));
     chunks[worldPos].notMeshed = false;
     chunks[worldPos].ID = currentID++;
 }
 
 // credit/inspiration for this algorithm: Tantan's "Blazingly Fast Greedy Mesher - Voxel Engine Optimizations" video
-void ChunkManager::meshChunk(ChunkVertex chunkVertices[MAX_QUADS], Chunk &chunk, const glm::vec3 &position,
-                             uint32_t &vertexStart) {
-    auto chunkCorner = glm::ivec3(position.x - HALF_CHUNK_SIZE, position.y - HALF_CHUNK_SIZE,
-                                  position.z - HALF_CHUNK_SIZE);
-    if (chunkCorner.x > 0) {
-        chunkCorner.x += 1;
-    }
-    if (chunkCorner.y > 0) {
-        chunkCorner.y += 1;
-    }
-    if (chunkCorner.z > 0) {
-        chunkCorner.z += 1;
-    }
-    const InternalNode *chunkRoot = dynamic_cast<InternalNode *>(chunk.octree);
-    uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]{};
+void ChunkManager::meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &vertexStart, const OctreeNode *chunkRoot,
+                             const glm::vec3 &chunkCorner) {
+    Block chunkBlocks[CHUNK_SIZE_3];
+    uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]{};
     uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]{};
-    Block chunkBlockInfo[CHUNK_SIZE_3];
-
-    std::array<
-        std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::array<uint32_t, CHUNK_SIZE> > >,
-        6> planesPerBlock{};
-
-    TimeManager::startTimer("setInternalBits");
-    setInternalBits(chunkBitsPerAxis, chunkBlockInfo, chunkRoot);
-    TimeManager::addTimeToProfiler("setInternalBits", TimeManager::finishTimer("setInternalBits"));
-
-    TimeManager::startTimer("setExternalBits");
-    setExternalBits(chunkBitsPerAxis, chunkCorner);
-    TimeManager::addTimeToProfiler("setExternalBits", TimeManager::finishTimer("setExternalBits"));
-
-    TimeManager::startTimer("cullBlockFaces");
-    cullBlockFaces(culledFaces, chunkBitsPerAxis);
-    TimeManager::addTimeToProfiler("cullBlockFaces", TimeManager::finishTimer("cullBlockFaces"));
-
-    TimeManager::startTimer("generateBinaryPlanes");
-    generateBinaryPlanes(planesPerBlock, culledFaces, chunkBlockInfo);
-    TimeManager::addTimeToProfiler("generateBinaryPlanes", TimeManager::finishTimer("generateBinaryPlanes"));
-
-    TimeManager::startTimer("meshAllBinaryPlanes");
+    std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6];
+    bool initializedPlanes[CHUNK_SIZE]{};
     ChunkVertex vertexInfo = {glm::vec3(0), 0, 0, 0};
-    meshAllBinaryPlanes(chunkVertices, planesPerBlock, vertexInfo, vertexStart, chunkCorner);
-    TimeManager::addTimeToProfiler("meshAllBinaryPlanes", TimeManager::finishTimer("meshAllBinaryPlanes"));
 
-    chunk.notMeshed = false;
+    setInternalBits(solidBitsPerAxis, chunkBlocks, chunkRoot);
+    setExternalBits(solidBitsPerAxis, chunkCorner);
+    cullBlockFaces(culledFaces, solidBitsPerAxis);
+    generateBinaryPlanes(blockPlanes, initializedPlanes, culledFaces, chunkBlocks);
+    meshAllBinaryPlanes(chunkVertices, blockPlanes, initializedPlanes, vertexInfo, vertexStart, chunkCorner);
 }
 
-void ChunkManager::setInternalBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
-                                   Block chunkBlockInfo[CHUNK_SIZE_3], const InternalNode *chunkRoot) {
-    for (int z = 0; z < CHUNK_SIZE; z++) {
-        for (int y = 0; y < CHUNK_SIZE; y++) {
-            for (int x = 0; x < CHUNK_SIZE; x++) {
-                const Block block = getBlock(chunkRoot, x, y, z);
-                if (block.color[3] != 0) {
-                    //x, z-y axis
-                    chunkBitsPerAxis[0][z + 1][x + 1] |= 1ull << (y + 1);
-                    //z, y-x axis
-                    chunkBitsPerAxis[1][y + 1][z + 1] |= 1ull << (x + 1);
-                    //x, y-z axis
-                    chunkBitsPerAxis[2][y + 1][x + 1] |= 1ull << (z + 1);
-                    //store block info for quick retrieval later
-                    chunkBlockInfo[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] = block;
-                }
+void ChunkManager::setInternalBits(uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
+                                   Block chunkBlocks[CHUNK_SIZE_3], const OctreeNode *root) {
+    if (root->isLeafNode) {
+        for (const auto block: root->blocks) {
+            if (!block.initialized) {
+                continue;
             }
+            //x, z-y axis
+            solidBitsPerAxis[0][block.position[2] + 1][block.position[0] + 1] |= 1ull << (block.position[1] + 1);
+            //z, y-x axis
+            solidBitsPerAxis[1][block.position[1] + 1][block.position[2] + 1] |= 1ull << (block.position[0] + 1);
+            //x, y-z axis
+            solidBitsPerAxis[2][block.position[1] + 1][block.position[0] + 1] |= 1ull << (block.position[2] + 1);
+            //store block info for quick retrieval later
+            chunkBlocks[block.position[1] * CHUNK_SIZE_2 + block.position[2] * CHUNK_SIZE + block.position[0]] = block;
         }
+        return;
+    }
+
+    for (const OctreeNode *const &childNode: root->children) {
+        if (childNode == nullptr) {
+            continue;
+        }
+        setInternalBits(solidBitsPerAxis, chunkBlocks, childNode);
     }
 }
 
-void ChunkManager::setAdjacentChunkBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
-                                        const InternalNode *chunkRoot, int xStart, int xEnd, int yStart, int yEnd,
+void ChunkManager::setAdjacentChunkBits(uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
+                                        const OctreeNode *chunkRoot, int xStart, int xEnd, int yStart, int yEnd,
                                         int zStart, int zEnd, int xOffset, int yOffset, int zOffset) {
     for (int z = zStart; z < zEnd; z++) {
         for (int y = yStart; y < yEnd; y++) {
             for (int x = xStart; x < xEnd; x++) {
-                const Block block = getBlock(chunkRoot, x + xOffset, y + yOffset, z + zOffset);
-                if (block.color[3] != 0) {
+                if (const Block block = getBlock(chunkRoot, x + xOffset, y + yOffset, z + zOffset); block.initialized) {
                     //x, z-y axis
-                    chunkBitsPerAxis[0][z + 1][x + 1] |= 1ull << (y + 1);
+                    solidBitsPerAxis[0][z + 1][x + 1] |= 1ull << (y + 1);
                     //z, y-x axis
-                    chunkBitsPerAxis[1][y + 1][z + 1] |= 1ull << (x + 1);
+                    solidBitsPerAxis[1][y + 1][z + 1] |= 1ull << (x + 1);
                     //x, y-z axis
-                    chunkBitsPerAxis[2][y + 1][x + 1] |= 1ull << (z + 1);
+                    solidBitsPerAxis[2][y + 1][x + 1] |= 1ull << (z + 1);
                 }
             }
         }
@@ -127,7 +103,7 @@ void ChunkManager::setAdjacentChunkBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_
 
 void ChunkManager::setExternalBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
                                    const glm::ivec3 &chunkCorner) {
-    std::vector adjacentChunkPositions = {
+    static const std::vector adjacentChunkPositions = {
         glm::ivec3(-1, 0, 0),
         glm::ivec3(CHUNK_SIZE, 0, 0),
         glm::ivec3(0, -1, 0),
@@ -136,7 +112,7 @@ void ChunkManager::setExternalBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDE
         glm::ivec3(0, 0, CHUNK_SIZE),
     };
 
-    std::vector loopEndNums = {
+    static const std::vector loopEndNums = {
         glm::ivec3(0, CHUNK_SIZE, CHUNK_SIZE),
         glm::ivec3(CHUNK_SIZE + 1, CHUNK_SIZE, CHUNK_SIZE),
         glm::ivec3(CHUNK_SIZE, 0, CHUNK_SIZE),
@@ -147,13 +123,12 @@ void ChunkManager::setExternalBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDE
 
     for (int i = 0; i < 6; i++) {
         glm::ivec3 position = adjacentChunkPositions[i];
-        const Chunk *chunk = getChunk(position + chunkCorner);
-        if (chunk != nullptr) {
-            glm::vec3 chunkCenter = Chunk::alignToChunkPos(position + chunkCorner);
-            int xOffset = static_cast<int>(static_cast<float>(chunkCorner.x) - chunkCenter.x + HALF_CHUNK_SIZE);
-            int yOffset = static_cast<int>(static_cast<float>(chunkCorner.y) - chunkCenter.y + HALF_CHUNK_SIZE);
-            int zOffset = static_cast<int>(static_cast<float>(chunkCorner.z) - chunkCenter.z + HALF_CHUNK_SIZE);
-            setAdjacentChunkBits(chunkBitsPerAxis, dynamic_cast<InternalNode *>(chunk->octree),
+        if (const Chunk *chunk = getChunk(position + chunkCorner); chunk != nullptr) {
+            const glm::vec3 chunkCenter = Chunk::alignToChunkPos(position + chunkCorner);
+            const int xOffset = static_cast<int>(static_cast<float>(chunkCorner.x) - chunkCenter.x + HALF_CHUNK_SIZE);
+            const int yOffset = static_cast<int>(static_cast<float>(chunkCorner.y) - chunkCenter.y + HALF_CHUNK_SIZE);
+            const int zOffset = static_cast<int>(static_cast<float>(chunkCorner.z) - chunkCenter.z + HALF_CHUNK_SIZE);
+            setAdjacentChunkBits(chunkBitsPerAxis, chunk->octree,
                                  position.x, loopEndNums[i].x,
                                  position.y, loopEndNums[i].y,
                                  position.z, loopEndNums[i].z,
@@ -163,10 +138,10 @@ void ChunkManager::setExternalBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDE
 }
 
 void ChunkManager::cullBlockFaces(uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
-                                  uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]) {
-    for (int axis = 0; axis < 3; axis++) {
-        for (int z = 0; z < CHUNK_SIZE_PADDED; z++) {
-            for (int x = 0; x < CHUNK_SIZE_PADDED; x++) {
+                                  const uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]) {
+    for (uint32_t axis = 0; axis < 3; axis++) {
+        for (uint32_t z = 0; z < CHUNK_SIZE_PADDED; z++) {
+            for (uint32_t x = 0; x < CHUNK_SIZE_PADDED; x++) {
                 const uint64_t column = chunkBitsPerAxis[axis][z][x];
                 culledFaces[2 * axis + 0][z][x] = column & ~(column << 1);
                 culledFaces[2 * axis + 1][z][x] = column & ~(column >> 1);
@@ -175,15 +150,15 @@ void ChunkManager::cullBlockFaces(uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHU
     }
 }
 
-void ChunkManager::generateBinaryPlanes(
-    std::array<std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::array<uint32_t, CHUNK_SIZE> > >, 6> &
-    planesPerBlock, uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED], Block chunkBlockInfo[CHUNK_SIZE_3]) {
-    for (int axis = 0; axis < 6; axis++) {
-        for (int z = 0; z < CHUNK_SIZE; z++) {
-            for (int x = 0; x < CHUNK_SIZE; x++) {
-                //skip over padding
+void ChunkManager::generateBinaryPlanes(std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6],
+                                        bool initializedPlanes[CHUNK_SIZE],
+                                        const uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
+                                        const Block chunkBlockInfo[CHUNK_SIZE_3]) {
+    for (uint32_t axis = 0; axis < 6; axis++) {
+        for (uint32_t z = 0; z < CHUNK_SIZE; z++) {
+            for (uint32_t x = 0; x < CHUNK_SIZE; x++) {
                 uint64_t column = culledFaces[axis][z + 1][x + 1];
-                column >>= 1;
+                column >>= 1; //skip over padding
                 column &= ~(1ull << CHUNK_SIZE);
 
                 while (column != 0) {
@@ -209,7 +184,8 @@ void ChunkManager::generateBinaryPlanes(
                     blockKey |= currentBlock.color[0];
                     blockKey |= currentBlock.color[1] << 8u;
                     blockKey |= currentBlock.color[2] << 16u;
-                    planesPerBlock[axis][blockKey][y][x] |= 1u << z;
+                    blockPlanes[axis][blockKey][y][x] |= 1u << z;
+                    initializedPlanes[y] = true;
                 }
             }
         }
@@ -217,76 +193,61 @@ void ChunkManager::generateBinaryPlanes(
 }
 
 void ChunkManager::meshAllBinaryPlanes(ChunkVertex chunkVertices[MAX_QUADS],
-                                       std::array<std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::array<
-                                           uint32_t, CHUNK_SIZE> > >, 6> &data,
+                                       std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6],
+                                       const bool initializedPlanes[CHUNK_SIZE],
                                        ChunkVertex &vertexInfo, uint32_t &vertexStart, const glm::ivec3 &chunkCorner) {
-    for (int axis = 0; axis < 6; axis++) {
-        std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::array<uint32_t, CHUNK_SIZE> > > axisInfo = data[axis];
-        for (auto &[blockKey, axisPlanes]: axisInfo) {
-            for (auto &[axisPos, plane]: axisPlanes) {
-                vertexInfo.color[0] = blockKey & 255;
-                vertexInfo.color[1] = (blockKey >> 8u) & 255;
-                vertexInfo.color[2] = (blockKey >> 16u) & 255;
-                greedyMeshBinaryPlane(chunkVertices, vertexStart, plane, chunkCorner, vertexInfo, axis, axisPos);
+    for (uint32_t axis = 0; axis < 6; axis++) {
+        for (auto &[blockKey, axisPlanes]: blockPlanes[axis]) {
+            for (uint32_t i = 0; i < CHUNK_SIZE; i++) {
+                if (initializedPlanes[i]) {
+                    vertexInfo.color[0] = blockKey & 255;
+                    vertexInfo.color[1] = (blockKey >> 8) & 255;
+                    vertexInfo.color[2] = (blockKey >> 16) & 255;
+                    greedyMeshBinaryPlane(chunkVertices, vertexStart, axisPlanes[i], chunkCorner, vertexInfo, axis, i);
+                }
             }
         }
     }
 }
 
 void ChunkManager::greedyMeshBinaryPlane(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &vertexStart,
-                                         std::array<uint32_t, CHUNK_SIZE> &plane,
-                                         const glm::ivec3 &chunkCorner, ChunkVertex &vertexInfo, uint32_t axis,
-                                         uint32_t axisPos) {
-    for (int row = 0; row < CHUNK_SIZE; row++) {
+                                         uint32_t plane[CHUNK_SIZE], const glm::ivec3 &chunkCorner,
+                                         const ChunkVertex &vertexInfo, uint32_t axis, uint32_t axisPos) {
+    for (uint32_t x = 0; x < CHUNK_SIZE; x++) {
         uint32_t y = 0;
         while (y < CHUNK_SIZE) {
-            y += __builtin_ctz(plane[row] >> y);
+            y += __builtin_ctz(plane[x] >> y);
             if (y >= CHUNK_SIZE) {
                 continue;
             }
-            uint32_t height = __builtin_ctz(~(plane[row] >> y));
+
+            uint32_t height;
+            if (plane[x] >> y == UINT32_MAX) {
+                height = 32;
+            } else {
+                height = __builtin_ctz(~(plane[x] >> y));
+            }
+
             uint32_t heightAsMask;
             if (height >= 32) {
                 heightAsMask = std::numeric_limits<uint32_t>::max();
             } else {
                 heightAsMask = (1u << height) - 1;
             }
-            uint32_t mask = heightAsMask << y;
+
+            const uint32_t mask = heightAsMask << y;
             uint32_t width = 1;
-            while (row + width < CHUNK_SIZE) {
-                uint32_t nextRowHeight = (plane[row + width] >> y) & heightAsMask;
-                if (nextRowHeight != heightAsMask) {
+            while (x + width < CHUNK_SIZE) {
+                if ((plane[x + width] >> y & heightAsMask) != heightAsMask) {
                     break;
                 }
-                plane[row + width] = plane[row + width] & ~mask;
+                plane[x + width] = plane[x + width] & ~mask;
                 width += 1;
             }
-            insertGreedyQuad(chunkVertices, vertexStart, vertexInfo, chunkCorner, row, y, width, height, axis, axisPos);
+            //todo axis won't be needed once normals are set up
+            insertGreedyQuad(chunkVertices, vertexStart, vertexInfo, chunkCorner, x, y, width, height, axis, axisPos);
             y += height;
         }
-    }
-}
-
-void ChunkManager::generateBlockMesh(Chunk &chunk, const glm::ivec3 &chunkCorner, Block block, int x, int y, int z) {
-    const auto adjustedPosition = glm::vec3(x + chunkCorner.x, y + chunkCorner.y, z + chunkCorner.z);
-
-    if (!hasBlock(adjustedPosition + glm::vec3(0, 1, 0))) {
-        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 0);
-    }
-    if (!hasBlock(adjustedPosition + glm::vec3(0, -1, 0))) {
-        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 1);
-    }
-    if (!hasBlock(adjustedPosition + glm::vec3(0, 0, 1))) {
-        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 2);
-    }
-    if (!hasBlock(adjustedPosition + glm::vec3(0, 0, -1))) {
-        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 3);
-    }
-    if (!hasBlock(adjustedPosition + glm::vec3(-1, 0, 0))) {
-        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 4);
-    }
-    if (!hasBlock(adjustedPosition + glm::vec3(1, 0, 0))) {
-        insertBlockVertices(chunk.vertices, adjustedPosition, block.color, 5);
     }
 }
 
@@ -307,51 +268,35 @@ void ChunkManager::addBlock(const glm::vec3 &position, const Block &block) {
     newBlock->color[0] = block.color[0];
     newBlock->color[1] = block.color[1];
     newBlock->color[2] = block.color[2];
-    newBlock->color[3] = block.color[3];
+    newBlock->initialized = true;
     chunk->notMeshed = true;
 }
 
 Block *ChunkManager::createPathToBlock(const Chunk *chunk, const glm::vec3 &position) {
-    auto *currentNode = dynamic_cast<InternalNode *>(chunk->octree);
-    OctreeNode *newBlockNode = nullptr;
+    auto *currentNode = chunk->octree;
     int depth = 0;
+    int octantIndex;
 
-    while (depth < MAX_DEPTH) {
-        const int octantIndex = Chunk::getOctantIndex(position, currentNode->position);
-
-        if (depth < MAX_DEPTH - 1 && currentNode->children[octantIndex] != nullptr) {
-            currentNode = dynamic_cast<InternalNode *>(currentNode->children[octantIndex]);
+    while (depth < MAX_DEPTH - 1) {
+        octantIndex = Chunk::getOctantIndex(position, currentNode->position);
+        if (currentNode->children[octantIndex] != nullptr) {
+            currentNode = currentNode->children[octantIndex];
             depth++;
             continue;
         }
 
-        if (currentNode->children[octantIndex] != nullptr) {
-            newBlockNode = currentNode->children[octantIndex];
-            break;
-        }
-
         glm::vec3 childPos = currentNode->position;
         Chunk::addOctantOffset(childPos, octantIndex, depth);
-
-        if (depth < MAX_DEPTH - 1) {
-            currentNode->children[octantIndex] = new InternalNode(childPos);
-            currentNode = dynamic_cast<InternalNode *>(currentNode->children[octantIndex]);
-        } else {
-            currentNode->children[octantIndex] = new OctreeNode();
-            newBlockNode = currentNode->children[octantIndex];
-        }
-
+        currentNode->children[octantIndex] = new OctreeNode(childPos);
+        currentNode = currentNode->children[octantIndex];
         depth++;
     }
-
-    if (newBlockNode == nullptr) {
-        throw std::runtime_error("failed to add block!");
-    }
-
-    return &newBlockNode->block;
+    currentNode->isLeafNode = true;
+    octantIndex = Chunk::getOctantIndex(position, currentNode->position);
+    return &currentNode->blocks[octantIndex];
 }
 
-Block ChunkManager::getBlock(const InternalNode *treeRoot, int x, int y, int z) {
+Block ChunkManager::getBlock(const OctreeNode *treeRoot, int x, int y, int z) {
     int depth = 0;
     while (depth < MAX_DEPTH) {
         int childIndex = 0;
@@ -368,12 +313,12 @@ Block ChunkManager::getBlock(const InternalNode *treeRoot, int x, int y, int z) 
             return {};
         }
         if (depth == MAX_DEPTH - 1) {
-            return treeRoot->children[childIndex]->block;
+            return treeRoot->blocks[childIndex];
         }
-        treeRoot = dynamic_cast<InternalNode *>(treeRoot->children[childIndex]);
+        treeRoot = treeRoot->children[childIndex];
         depth++;
     }
-    return treeRoot->block;
+    return {};
 }
 
 Block ChunkManager::getBlock(const int x, const int y, const int z) {
@@ -381,34 +326,12 @@ Block ChunkManager::getBlock(const int x, const int y, const int z) {
     if (chunk == nullptr) {
         return {};
     }
-    const InternalNode *chunkRoot = dynamic_cast<InternalNode *>(chunk->octree);
+    const OctreeNode *chunkRoot = chunk->octree;
     glm::vec3 chunkCenter = Chunk::alignToChunkPos(glm::vec3(x, y, z));
     return getBlock(chunkRoot,
                     x - chunkCenter.x + HALF_CHUNK_SIZE,
                     y - chunkCenter.y + HALF_CHUNK_SIZE,
                     z - chunkCenter.z + HALF_CHUNK_SIZE);
-}
-
-bool ChunkManager::hasBlock(const glm::vec3 &worldPos) {
-    const OctreeNode *blockTree = findOctreeNode(worldPos);
-    return blockTree != nullptr;
-}
-
-void ChunkManager::removeBlock(const glm::vec3 &worldPos) {
-    //todo testing
-    OctreeNode *blockTree = findOctreeNode(worldPos);
-
-    if (blockTree == nullptr) {
-        throw std::runtime_error("error removing block!");
-    }
-
-    blockTree->block = {};
-
-    const glm::vec3 chunkCenter = Chunk::alignToChunkPos(worldPos);
-
-    if (Chunk *chunk = getChunk(chunkCenter); chunk != nullptr) {
-        chunk->notMeshed = true;
-    }
 }
 
 void ChunkManager::fillChunk(const glm::vec3 &worldPos, const glm::vec3 &position, const Block &block) {
@@ -432,39 +355,6 @@ void ChunkManager::fillChunk(const glm::vec3 &worldPos, const glm::vec3 &positio
     }
 }
 
-OctreeNode *ChunkManager::findOctreeNode(const glm::vec3 &worldPos) {
-    const glm::vec3 chunkCenter = Chunk::alignToChunkPos(worldPos);
-    const Chunk *chunk = getChunk(chunkCenter);
-
-    if (chunk == nullptr) {
-        return nullptr;
-    }
-
-    auto *currentNode = dynamic_cast<InternalNode *>(chunk->octree);
-    glm::ivec3 relativePosition = worldPos - chunkCenter + glm::vec3(HALF_CHUNK_SIZE);
-
-    int depth = 0;
-    while (depth < MAX_DEPTH) {
-        int childIndex = 0;
-        if (static_cast<float>(relativePosition.x) >= currentNode->position.x) childIndex |= 1;
-        if (static_cast<float>(relativePosition.y) >= currentNode->position.y) childIndex |= 2;
-        if (static_cast<float>(relativePosition.z) >= currentNode->position.z) childIndex |= 4;
-
-        if (currentNode->children[childIndex] == nullptr) {
-            return nullptr;
-        }
-
-        if (depth == MAX_DEPTH - 1) {
-            return currentNode->children[childIndex];
-        }
-
-        currentNode = dynamic_cast<InternalNode *>(currentNode->children[childIndex]);
-        depth++;
-    }
-
-    return currentNode;
-}
-
 void ChunkManager::meshAllChunks() {
     ChunkVertex chunkVertices[MAX_QUADS]{};
     chunkVertices[0] = {};
@@ -472,7 +362,8 @@ void ChunkManager::meshAllChunks() {
         if (chunk.notMeshed) {
             uint32_t vertexCount = 0;
             TimeManager::startTimer("meshChunk");
-            meshChunk(chunkVertices, chunk, position, vertexCount); //todo don't store vertices in chunks
+            meshChunk(chunkVertices, vertexCount, chunk.octree, Chunk::calculateCorner(position));
+            chunk.notMeshed = false;
             TimeManager::addTimeToProfiler("meshChunk", TimeManager::finishTimer("meshChunk"));
 
             TimeManager::startTimer("addToVertexPool");
