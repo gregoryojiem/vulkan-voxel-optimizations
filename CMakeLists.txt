@@ -23,25 +23,25 @@ set_target_properties(glfw PROPERTIES
 
 add_executable(vulkan_voxel
         src/main.cpp
-        src/rendering/misc/Vertex.cpp
-        src/rendering/misc/Vertex.h
-        src/rendering/misc/Camera.cpp
-        src/rendering/misc/Camera.h
+        src/rendering/scene/Vertex.cpp
+        src/rendering/scene/Vertex.h
+        src/rendering/scene/Camera.cpp
+        src/rendering/scene/Camera.h
         src/rendering/ChunkRenderer.cpp
         src/rendering/ChunkRenderer.h
         src/util/TimeManager.cpp
         src/util/TimeManager.h
         src/util/InputManager.cpp
         src/util/InputManager.h
-        src/game/World.h
-        src/game/World.cpp
-        src/game/Block.h
-        src/game/ChunkManager.cpp
-        src/game/ChunkManager.h
-        src/util/GraphicsUtil.cpp
-        src/util/GraphicsUtil.h
-        src/rendering/misc/VertexPool.cpp
-        src/rendering/misc/VertexPool.h
+        src/core/World.h
+        src/core/World.cpp
+        src/core/Block.h
+        src/core/ChunkManager.cpp
+        src/core/ChunkManager.h
+        src/util/VertexUtil.cpp
+        src/util/VertexUtil.h
+        src/rendering/scene/VertexPool.cpp
+        src/rendering/scene/VertexPool.h
         src/rendering/TextRenderer.cpp
         src/rendering/TextRenderer.h
         src/util/TextUtil.cpp
@@ -59,8 +59,8 @@ add_executable(vulkan_voxel
         src/rendering/MainRenderer.cpp
         src/rendering/MainRenderer.h
         src/rendering/vulkan/VulkanStructs.h
-        src/game/Chunk.cpp
-        src/game/Chunk.h
+        src/core/Chunk.cpp
+        src/core/Chunk.h
 )
 
 target_link_libraries(vulkan_voxel

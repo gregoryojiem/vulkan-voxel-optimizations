@@ -8,7 +8,7 @@
 #include "../game/Chunk.h"
 #include "vulkan/VulkanBufferUtil.h"
 #include "vulkan/VulkanUtil.h"
-#include "misc/VertexPool.h"
+#include "scene/VertexPool.h"
 
 constexpr uint32_t INDEX_BUFFER_SIZE = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36;
 

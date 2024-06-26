@@ -2,7 +2,7 @@
 #include <queue>
 #include <thread>
 
-#include "game/World.h"
+#include "core/World.h"
 #include "rendering/MainRenderer.h"
 
 MainRenderer mainRenderer;

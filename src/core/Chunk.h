@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "Block.h"
-#include "../rendering/misc/Vertex.h"
+#include "../rendering/scene/Vertex.h"
 
 constexpr int CHUNK_SIZE = 32;
 constexpr int CHUNK_SIZE_2 = CHUNK_SIZE * CHUNK_SIZE;

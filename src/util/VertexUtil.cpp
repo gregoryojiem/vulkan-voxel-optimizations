@@ -1,6 +1,6 @@
-#include "GraphicsUtil.h"
+#include "VertexUtil.h"
 
-#include "../rendering/misc/Vertex.h"
+#include "../rendering/scene/Vertex.h"
 
 static constexpr std::array<std::array<glm::vec3, 4>, 6> facePositions = {
     glm::vec3{1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f},

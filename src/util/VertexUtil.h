@@ -1,11 +1,10 @@
 #ifndef GRAPHICSUTIL_H
 #define GRAPHICSUTIL_H
 
-#include <array>
 #include <vector>
 
-#include "../rendering/misc/Vertex.h"
-#include "../game/Chunk.h"
+#include "../rendering/scene/Vertex.h"
+#include "../core/Chunk.h"
 
 extern void insertBlockVertices(std::vector<ChunkVertex> &chunkVertices, const glm::vec3 &blockPos, uint8_t color[4],
                                 int face);

@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <glm/common.hpp>
 
-#include "../rendering/misc/VertexPool.h"
-#include "../util/GraphicsUtil.h"
+#include "../rendering/scene/VertexPool.h"
+#include "../util/VertexUtil.h"
 #include "../util/TimeManager.h"
 
 uint32_t ChunkManager::currentID = 1;
