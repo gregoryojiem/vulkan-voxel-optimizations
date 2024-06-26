@@ -60,7 +60,7 @@ public:
                                       uint32_t plane[CHUNK_SIZE], const glm::ivec3 &chunkCorner,
                                       const ChunkVertex &vertexInfo, uint32_t axis, uint32_t axisPos);
 
-    void meshAllChunks();
+    int meshAllChunks();
 
     uint32_t chunkCount() const;
 

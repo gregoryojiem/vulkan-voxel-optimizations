@@ -355,9 +355,10 @@ void ChunkManager::fillChunk(const glm::vec3 &worldPos, const glm::vec3 &positio
     }
 }
 
-void ChunkManager::meshAllChunks() {
+int ChunkManager::meshAllChunks() {
     ChunkVertex chunkVertices[MAX_QUADS]{};
     chunkVertices[0] = {};
+    int totalVertexCount = 0;
     for (auto &[position, chunk]: chunks) {
         if (chunk.notMeshed) {
             uint32_t vertexCount = 0;
@@ -371,8 +372,11 @@ void ChunkManager::meshAllChunks() {
                 VertexPool::addToVertexPool(chunkVertices, vertexCount, chunk.ID);
             }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
+            totalVertexCount += vertexCount;
         }
     }
+    const int triangleCount = totalVertexCount/2;
+    return triangleCount;
 }
 
 uint32_t ChunkManager::chunkCount() const {

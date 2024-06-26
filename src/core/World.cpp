@@ -42,7 +42,7 @@ uint32_t World::generateTerrainFromNoise(const int range) {
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
-    constexpr int range = 5000;
+    int range = 5000;
     std::cout << "Started generating terrain! ";
 
     TimeManager::startTimer("generateTerrain");
@@ -52,9 +52,10 @@ void World::init() {
     std::cout << "There were " << TextUtil::getCommaString(numBlocksGenerated) << " voxels and " <<
             TextUtil::getCommaString(chunkManager.chunkCount()) << " chunks!\n";
 
-    std::cout << "Started meshing!\n";
+    std::cout << "Started meshing!";
 
-    chunkManager.meshAllChunks();
+    const uint32_t triangleCount = chunkManager.meshAllChunks();
+    std::cout << " There were " << TextUtil::getCommaString(triangleCount) << " triangles generated!\n";
 
     TimeManager::printAllProfiling();
 }
