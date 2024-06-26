@@ -7,6 +7,8 @@
 #include "../rendering/misc/Vertex.h"
 
 constexpr int CHUNK_SIZE = 32;
+constexpr int CHUNK_SIZE_2 = CHUNK_SIZE * CHUNK_SIZE;
+constexpr int CHUNK_SIZE_3 = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 constexpr int HALF_CHUNK_SIZE = CHUNK_SIZE/2;
 constexpr int MAX_DEPTH = static_cast<uint32_t>(log2(CHUNK_SIZE));
 constexpr float CHUNK_SHIFT = static_cast<float>(HALF_CHUNK_SIZE) - 0.5f;
@@ -14,7 +16,6 @@ constexpr int CHUNK_SIZE_PADDED = CHUNK_SIZE + 2;
 constexpr int CHUNK_SIZE_PADDED_2 = CHUNK_SIZE_PADDED * CHUNK_SIZE_PADDED;
 constexpr int CHUNK_SIZE_PADDED_3 = CHUNK_SIZE_PADDED * CHUNK_SIZE_PADDED * CHUNK_SIZE_PADDED;
 constexpr int MAX_QUADS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE / 2 * 6;
-constexpr int CHUNK_SIZE_3 = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 template <int depth>
 constexpr auto GET_DEPTH_SUBDIVISIONS() {
@@ -28,23 +29,20 @@ constexpr auto GET_DEPTH_SUBDIVISIONS() {
 constexpr auto DEPTH_SUBDIVISIONS = GET_DEPTH_SUBDIVISIONS<MAX_DEPTH>();
 
 struct OctreeNode {
-    Block block{};
-
-    virtual ~OctreeNode();
-};
-
-struct InternalNode final : OctreeNode {
     glm::vec3 position{};
-    OctreeNode *children[8] = {nullptr};
+    bool isLeafNode{};
 
-    explicit InternalNode(const glm::vec3 &nodePosition);
+    union {
+        OctreeNode *children[8]{};
+        Block blocks[8];
+    };
 
-    ~InternalNode() override;
+    explicit OctreeNode(const glm::vec3 &nodePosition);
+    ~OctreeNode();
 };
 
 struct Chunk {
     OctreeNode *octree;
-    std::vector<ChunkVertex> vertices;
     bool notMeshed;
     uint32_t ID;
 
@@ -59,6 +57,8 @@ struct Chunk {
     static int getOctantIndex(const glm::vec3 &blockPosition, const glm::vec3 &chunkPos);
 
     static void addOctantOffset(glm::vec3 &middlePosition, int octantIndex, int depth);
+
+    static glm::vec3 calculateCorner(glm::vec3 position);
 };
 
 #endif //CHUNK_H

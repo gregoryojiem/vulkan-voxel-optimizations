@@ -1,12 +1,9 @@
 #include "Chunk.h"
 
-OctreeNode::~OctreeNode() = default;
-
-InternalNode::InternalNode(const glm::vec3 &nodePosition) {
-    position = nodePosition;
+OctreeNode::OctreeNode(const glm::vec3 &nodePosition) : position(nodePosition) {
 }
 
-InternalNode::~InternalNode() {
+OctreeNode::~OctreeNode() {
     for (const auto &i: children) {
         delete i;
     }
@@ -44,4 +41,19 @@ void Chunk::addOctantOffset(glm::vec3 &middlePosition, int octantIndex, int dept
     middlePosition.x += xSign * DEPTH_SUBDIVISIONS[depth];
     middlePosition.y += DEPTH_SUBDIVISIONS[depth] * ySign;
     middlePosition.z += DEPTH_SUBDIVISIONS[depth] * zSign;
+}
+
+glm::vec3 Chunk::calculateCorner(const glm::vec3 position) {
+    auto chunkCorner = glm::ivec3(position.x - HALF_CHUNK_SIZE, position.y - HALF_CHUNK_SIZE,
+                                  position.z - HALF_CHUNK_SIZE);
+    if (chunkCorner.x > 0) {
+        chunkCorner.x += 1;
+    }
+    if (chunkCorner.y > 0) {
+        chunkCorner.y += 1;
+    }
+    if (chunkCorner.z > 0) {
+        chunkCorner.z += 1;
+    }
+    return chunkCorner;
 }
