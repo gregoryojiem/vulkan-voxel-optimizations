@@ -48,11 +48,25 @@ void ChunkManager::meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &ver
     bool initializedPlanes[CHUNK_SIZE]{};
     ChunkVertex vertexInfo = {glm::vec3(0), 0, 0, 0};
 
+    TimeManager::startTimer("setInternalBits");
     setInternalBits(solidBitsPerAxis, chunkBlocks, chunkRoot);
+    TimeManager::addTimeToProfiler("setInternalBits", TimeManager::finishTimer("setInternalBits"));
+
+    TimeManager::startTimer("setExternalBits");
     setExternalBits(solidBitsPerAxis, chunkCorner);
+    TimeManager::addTimeToProfiler("setExternalBits", TimeManager::finishTimer("setExternalBits"));
+
+    TimeManager::startTimer("cullBlockFaces");
     cullBlockFaces(culledFaces, solidBitsPerAxis);
+    TimeManager::addTimeToProfiler("cullBlockFaces", TimeManager::finishTimer("cullBlockFaces"));
+
+    TimeManager::startTimer("generateBinaryPlanes");
     generateBinaryPlanes(blockPlanes, initializedPlanes, culledFaces, chunkBlocks);
+    TimeManager::addTimeToProfiler("generateBinaryPlanes", TimeManager::finishTimer("generateBinaryPlanes"));
+
+    TimeManager::startTimer("meshAllBinaryPlanes");
     meshAllBinaryPlanes(chunkVertices, blockPlanes, initializedPlanes, vertexInfo, vertexStart, chunkCorner);
+    TimeManager::addTimeToProfiler("meshAllBinaryPlanes", TimeManager::finishTimer("meshAllBinaryPlanes"));
 }
 
 void ChunkManager::setInternalBits(uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
@@ -82,67 +96,81 @@ void ChunkManager::setInternalBits(uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDE
     }
 }
 
+AdjacentChunkBounds::AdjacentChunkBounds(const int xOffset, const int yOffset, const int zOffset) {
+    xMin = yMin = zMin = 0;
+    xMax = yMax = zMax = CHUNK_SIZE;
+    this->xOffset = static_cast<int8_t>(xOffset);
+    this->yOffset = static_cast<int8_t>(yOffset);
+    this->zOffset = static_cast<int8_t>(zOffset);
+
+    auto adjust = [](int8_t &offset, int8_t &min, int8_t &max) {
+        max = static_cast<int8_t>(offset < 0 ? 1 : max);
+        min = static_cast<int8_t>(offset > 0 ? 31 : min);
+        switch (offset) {
+            case -1:
+                offset = 33;
+            break;
+            case 1:
+                offset = -31;
+            break;
+            default:
+                offset = 1;
+        }
+    };
+
+    adjust(this->xOffset, xMin, xMax);
+    adjust(this->yOffset, yMin, yMax);
+    adjust(this->zOffset, zMin, zMax);
+}
+
 void ChunkManager::setAdjacentChunkBits(uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
-                                        const OctreeNode *chunkRoot, int xStart, int xEnd, int yStart, int yEnd,
-                                        int zStart, int zEnd, int xOffset, int yOffset, int zOffset) {
-    for (int z = zStart; z < zEnd; z++) {
-        for (int y = yStart; y < yEnd; y++) {
-            for (int x = xStart; x < xEnd; x++) {
-                if (const Block block = getBlock(chunkRoot, x + xOffset, y + yOffset, z + zOffset); block.initialized) {
+                                        const OctreeNode *root, const AdjacentChunkBounds &loopInfo) {
+    for (int8_t z = loopInfo.zMin; z < loopInfo.zMax; z++) {
+        for (int8_t y = loopInfo.yMin; y < loopInfo.yMax; y++) {
+            for (int8_t x = loopInfo.xMin; x < loopInfo.xMax; x++) {
+                if (const Block block = getBlock(root, x, y, z); block.initialized) {
                     //x, z-y axis
-                    solidBitsPerAxis[0][z + 1][x + 1] |= 1ull << (y + 1);
+                    solidBitsPerAxis[0][z + loopInfo.zOffset][x + loopInfo.xOffset] |= 1ull << (y + loopInfo.yOffset);
                     //z, y-x axis
-                    solidBitsPerAxis[1][y + 1][z + 1] |= 1ull << (x + 1);
+                    solidBitsPerAxis[1][y + loopInfo.yOffset][z + loopInfo.zOffset] |= 1ull << (x + loopInfo.xOffset);
                     //x, y-z axis
-                    solidBitsPerAxis[2][y + 1][x + 1] |= 1ull << (z + 1);
+                    solidBitsPerAxis[2][y + loopInfo.yOffset][x + loopInfo.xOffset] |= 1ull << (z + loopInfo.zOffset);
                 }
             }
         }
     }
 }
 
-void ChunkManager::setExternalBits(uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
+void ChunkManager::setExternalBits(uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
                                    const glm::ivec3 &chunkCorner) {
     static const std::vector adjacentChunkPositions = {
-        glm::ivec3(-1, 0, 0),
-        glm::ivec3(CHUNK_SIZE, 0, 0),
         glm::ivec3(0, -1, 0),
         glm::ivec3(0, CHUNK_SIZE, 0),
+        glm::ivec3(-1, 0, 0),
+        glm::ivec3(CHUNK_SIZE, 0, 0),
         glm::ivec3(0, 0, -1),
         glm::ivec3(0, 0, CHUNK_SIZE),
     };
 
-    static const std::vector loopEndNums = {
-        glm::ivec3(0, CHUNK_SIZE, CHUNK_SIZE),
-        glm::ivec3(CHUNK_SIZE + 1, CHUNK_SIZE, CHUNK_SIZE),
-        glm::ivec3(CHUNK_SIZE, 0, CHUNK_SIZE),
-        glm::ivec3(CHUNK_SIZE, CHUNK_SIZE + 1, CHUNK_SIZE),
-        glm::ivec3(CHUNK_SIZE, CHUNK_SIZE, 0),
-        glm::ivec3(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE + 1),
-    };
-
-    for (int i = 0; i < 6; i++) {
-        glm::ivec3 position = adjacentChunkPositions[i];
+    glm::vec3 baseChunkCenter = glm::vec3(chunkCorner + HALF_CHUNK_SIZE);
+    for (int axis = 0; axis < 6; axis++) {
+        glm::ivec3 position = adjacentChunkPositions[axis];
         if (const Chunk *chunk = getChunk(position + chunkCorner); chunk != nullptr) {
-            const glm::vec3 chunkCenter = Chunk::alignToChunkPos(position + chunkCorner);
-            const int xOffset = static_cast<int>(static_cast<float>(chunkCorner.x) - chunkCenter.x + HALF_CHUNK_SIZE);
-            const int yOffset = static_cast<int>(static_cast<float>(chunkCorner.y) - chunkCenter.y + HALF_CHUNK_SIZE);
-            const int zOffset = static_cast<int>(static_cast<float>(chunkCorner.z) - chunkCenter.z + HALF_CHUNK_SIZE);
-            setAdjacentChunkBits(chunkBitsPerAxis, chunk->octree,
-                                 position.x, loopEndNums[i].x,
-                                 position.y, loopEndNums[i].y,
-                                 position.z, loopEndNums[i].z,
-                                 xOffset, yOffset, zOffset);
+            const glm::vec3 adjacentChunkCenter = Chunk::alignToChunkPos(position + chunkCorner);
+            const int xOffset = std::clamp(static_cast<int>(baseChunkCenter.x - adjacentChunkCenter.x), -1, 1);
+            const int yOffset = std::clamp(static_cast<int>(baseChunkCenter.y - adjacentChunkCenter.y), -1, 1);
+            const int zOffset = std::clamp(static_cast<int>(baseChunkCenter.z - adjacentChunkCenter.z), -1, 1);
+            setAdjacentChunkBits(solidBitsPerAxis, chunk->octree, AdjacentChunkBounds(xOffset, yOffset, zOffset));
         }
     }
 }
 
 void ChunkManager::cullBlockFaces(uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
-                                  const uint64_t chunkBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]) {
+                                  const uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]) {
     for (uint32_t axis = 0; axis < 3; axis++) {
         for (uint32_t z = 0; z < CHUNK_SIZE_PADDED; z++) {
             for (uint32_t x = 0; x < CHUNK_SIZE_PADDED; x++) {
-                const uint64_t column = chunkBitsPerAxis[axis][z][x];
+                const uint64_t column = solidBitsPerAxis[axis][z][x];
                 culledFaces[2 * axis + 0][z][x] = column & ~(column << 1);
                 culledFaces[2 * axis + 1][z][x] = column & ~(column >> 1);
             }
@@ -165,7 +193,7 @@ void ChunkManager::generateBinaryPlanes(std::unordered_map<uint32_t, uint32_t[CH
                     const uint64_t y = __builtin_ctz(column);
                     column &= column - 1;
 
-                    Block currentBlock{};
+                    Block currentBlock;
                     switch (axis) {
                         case 0:
                         case 1:
@@ -309,29 +337,16 @@ Block ChunkManager::getBlock(const OctreeNode *treeRoot, int x, int y, int z) {
         if (z >= treeRoot->position.z) {
             childIndex |= 4;
         }
-        if (treeRoot->children[childIndex] == nullptr) {
-            return {};
-        }
         if (depth == MAX_DEPTH - 1) {
             return treeRoot->blocks[childIndex];
+        }
+        if (treeRoot->children[childIndex] == nullptr) {
+            return {};
         }
         treeRoot = treeRoot->children[childIndex];
         depth++;
     }
     return {};
-}
-
-Block ChunkManager::getBlock(const int x, const int y, const int z) {
-    Chunk *chunk = getChunk(glm::vec3(x, y, z));
-    if (chunk == nullptr) {
-        return {};
-    }
-    const OctreeNode *chunkRoot = chunk->octree;
-    glm::vec3 chunkCenter = Chunk::alignToChunkPos(glm::vec3(x, y, z));
-    return getBlock(chunkRoot,
-                    x - chunkCenter.x + HALF_CHUNK_SIZE,
-                    y - chunkCenter.y + HALF_CHUNK_SIZE,
-                    z - chunkCenter.z + HALF_CHUNK_SIZE);
 }
 
 void ChunkManager::fillChunk(const glm::vec3 &worldPos, const glm::vec3 &position, const Block &block) {
@@ -375,7 +390,7 @@ int ChunkManager::meshAllChunks() {
             totalVertexCount += vertexCount;
         }
     }
-    const int triangleCount = totalVertexCount/2;
+    const int triangleCount = totalVertexCount / 2;
     return triangleCount;
 }
 
