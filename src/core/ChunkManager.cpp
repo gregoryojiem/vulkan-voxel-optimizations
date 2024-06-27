@@ -39,8 +39,8 @@ void ChunkManager::createChunk(const glm::vec3 &worldPos) {
 }
 
 // credit/inspiration for this algorithm: Tantan's "Blazingly Fast Greedy Mesher - Voxel Engine Optimizations" video
-void ChunkManager::meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &vertexStart, const OctreeNode *chunkRoot,
-                             const glm::vec3 &chunkCorner) {
+void ChunkManager::meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t faceOffsets[6], uint32_t &startVertex,
+                             const OctreeNode *chunkRoot, const glm::vec3 &chunkCorner) {
     Block chunkBlocks[CHUNK_SIZE_3];
     uint64_t solidBitsPerAxis[3][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]{};
     uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED]{};
@@ -65,7 +65,7 @@ void ChunkManager::meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &ver
     TimeManager::addTimeToProfiler("generateBinaryPlanes", TimeManager::finishTimer("generateBinaryPlanes"));
 
     TimeManager::startTimer("meshAllBinaryPlanes");
-    meshAllBinaryPlanes(chunkVertices, blockPlanes, initializedPlanes, vertexInfo, vertexStart, chunkCorner);
+    meshBinaryPlanes(chunkVertices, blockPlanes, initializedPlanes, vertexInfo, startVertex, faceOffsets, chunkCorner);
     TimeManager::addTimeToProfiler("meshAllBinaryPlanes", TimeManager::finishTimer("meshAllBinaryPlanes"));
 }
 
@@ -109,10 +109,10 @@ AdjacentChunkBounds::AdjacentChunkBounds(const int xOffset, const int yOffset, c
         switch (offset) {
             case -1:
                 offset = 33;
-            break;
+                break;
             case 1:
                 offset = -31;
-            break;
+                break;
             default:
                 offset = 1;
         }
@@ -220,25 +220,26 @@ void ChunkManager::generateBinaryPlanes(std::unordered_map<uint32_t, uint32_t[CH
     }
 }
 
-void ChunkManager::meshAllBinaryPlanes(ChunkVertex chunkVertices[MAX_QUADS],
-                                       std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6],
-                                       const bool initializedPlanes[CHUNK_SIZE],
-                                       ChunkVertex &vertexInfo, uint32_t &vertexStart, const glm::ivec3 &chunkCorner) {
+void ChunkManager::meshBinaryPlanes(ChunkVertex chunkVertices[MAX_QUADS],
+                                    std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6],
+                                    const bool initializedPlanes[CHUNK_SIZE], ChunkVertex &vertexInfo,
+                                    uint32_t &startVertex, uint32_t faceOffsets[6], const glm::ivec3 &chunkCorner) {
     for (uint32_t axis = 0; axis < 6; axis++) {
+        faceOffsets[axis] = startVertex;
         for (auto &[blockKey, axisPlanes]: blockPlanes[axis]) {
             for (uint32_t i = 0; i < CHUNK_SIZE; i++) {
                 if (initializedPlanes[i]) {
                     vertexInfo.color[0] = blockKey & 255;
                     vertexInfo.color[1] = (blockKey >> 8) & 255;
                     vertexInfo.color[2] = (blockKey >> 16) & 255;
-                    greedyMeshBinaryPlane(chunkVertices, vertexStart, axisPlanes[i], chunkCorner, vertexInfo, axis, i);
+                    greedyMeshBinaryPlane(chunkVertices, startVertex, axisPlanes[i], chunkCorner, vertexInfo, axis, i);
                 }
             }
         }
     }
 }
 
-void ChunkManager::greedyMeshBinaryPlane(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &vertexStart,
+void ChunkManager::greedyMeshBinaryPlane(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &startVertex,
                                          uint32_t plane[CHUNK_SIZE], const glm::ivec3 &chunkCorner,
                                          const ChunkVertex &vertexInfo, uint32_t axis, uint32_t axisPos) {
     for (uint32_t x = 0; x < CHUNK_SIZE; x++) {
@@ -273,7 +274,7 @@ void ChunkManager::greedyMeshBinaryPlane(ChunkVertex chunkVertices[MAX_QUADS], u
                 width += 1;
             }
             //todo axis won't be needed once normals are set up
-            insertGreedyQuad(chunkVertices, vertexStart, vertexInfo, chunkCorner, x, y, width, height, axis, axisPos);
+            insertGreedyQuad(chunkVertices, startVertex, vertexInfo, chunkCorner, x, y, width, height, axis, axisPos);
             y += height;
         }
     }
@@ -373,24 +374,25 @@ void ChunkManager::fillChunk(const glm::vec3 &worldPos, const glm::vec3 &positio
 int ChunkManager::meshAllChunks() {
     ChunkVertex chunkVertices[MAX_QUADS]{};
     chunkVertices[0] = {};
-    int totalVertexCount = 0;
+    uint32_t totalVertexCount = 0;
     for (auto &[position, chunk]: chunks) {
         if (chunk.notMeshed) {
             uint32_t vertexCount = 0;
+            uint32_t faceOffsets[6];
             TimeManager::startTimer("meshChunk");
-            meshChunk(chunkVertices, vertexCount, chunk.octree, Chunk::calculateCorner(position));
+            meshChunk(chunkVertices, faceOffsets, vertexCount, chunk.octree, Chunk::calculateCorner(position));
             chunk.notMeshed = false;
             TimeManager::addTimeToProfiler("meshChunk", TimeManager::finishTimer("meshChunk"));
 
             TimeManager::startTimer("addToVertexPool");
             if (vertexCount > 0) {
-                VertexPool::addToVertexPool(chunkVertices, vertexCount, chunk.ID);
+                VertexPool::addToVertexPool(chunkVertices, faceOffsets, vertexCount, chunk.ID);
             }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
             totalVertexCount += vertexCount;
         }
     }
-    const int triangleCount = totalVertexCount / 2;
+    const int triangleCount = static_cast<int>(totalVertexCount / 2);
     return triangleCount;
 }
 

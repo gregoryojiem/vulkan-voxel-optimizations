@@ -19,6 +19,7 @@ struct AdjacentChunkBounds {
     int8_t xOffset;
     int8_t yOffset;
     int8_t zOffset;
+
     AdjacentChunkBounds(int xOffset, int yOffset, int zOffset);
 };
 
@@ -40,7 +41,7 @@ public:
 
     void fillChunk(const glm::vec3 &worldPos, const glm::vec3 &position, const Block &block);
 
-    void meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &vertexStart,
+    void meshChunk(ChunkVertex chunkVertices[MAX_QUADS], uint32_t faceOffsets[6], uint32_t &vertexStart,
                    const OctreeNode *chunkRoot, const glm::vec3 &chunkCorner);
 
     int meshAllChunks();
@@ -70,12 +71,12 @@ private:
         bool initializedPlanes[CHUNK_SIZE], const uint64_t culledFaces[6][CHUNK_SIZE_PADDED][CHUNK_SIZE_PADDED],
         const Block chunkBlockInfo[CHUNK_SIZE_3]);
 
-    static void meshAllBinaryPlanes(ChunkVertex chunkVertices[MAX_QUADS],
-                                    std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6],
-                                    const bool initializedPlanes[CHUNK_SIZE],
-                                    ChunkVertex &vertexInfo, uint32_t &vertexStart, const glm::ivec3 &chunkCorner);
+    static void meshBinaryPlanes(ChunkVertex chunkVertices[MAX_QUADS],
+                                 std::unordered_map<uint32_t, uint32_t[CHUNK_SIZE][CHUNK_SIZE]> blockPlanes[6],
+                                 const bool initializedPlanes[CHUNK_SIZE], ChunkVertex &vertexInfo,
+                                 uint32_t &startVertex, uint32_t faceOffsets[6], const glm::ivec3 &chunkCorner);
 
-    static void greedyMeshBinaryPlane(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &vertexStart,
+    static void greedyMeshBinaryPlane(ChunkVertex chunkVertices[MAX_QUADS], uint32_t &startVertex,
                                       uint32_t plane[CHUNK_SIZE], const glm::ivec3 &chunkCorner,
                                       const ChunkVertex &vertexInfo, uint32_t axis, uint32_t axisPos);
 

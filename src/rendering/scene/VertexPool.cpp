@@ -7,31 +7,33 @@ static constexpr size_t CHUNK_VERTICES_SIZE = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SI
 
 std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
 std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
-std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {{0, CHUNK_VERTICES_SIZE, 0, 0, false}};
+std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {
+    {0, CHUNK_VERTICES_SIZE, 0, 0, false, {0, 0, 0, 0, 0, 0}}
+};
 bool VertexPool::newUpdate;
 
-void VertexPool::addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], uint32_t vertexCount, uint32_t chunkID) {
-    const ChunkMemoryRange vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
-                                                                      vertexCount);
+void VertexPool::addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], const uint32_t faceOffsets[6],
+                                 uint32_t vertexCount, uint32_t chunkID) {
+    const uint32_t requiredVertices = *std::lower_bound(powersOfTwo.begin(), powersOfTwo.end(), vertexCount);
+    ChunkMemoryRange &vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
+                                                                 vertexCount);
+    vertexRangeToUse.indexCount = getAmountOfIndices(vertexCount);
+    vertexRangeToUse.vertexCount = vertexCount;
+    vertexRangeToUse.savedToVBuffer = false;
+    std::copy_n(faceOffsets, 6, vertexRangeToUse.faceOffsets);
     std::copy_n(chunkVertices, vertexCount, globalChunkVertices.begin() + vertexRangeToUse.startPos);
     newUpdate = true;
 }
 
-std::unordered_map<uint32_t, ChunkMemoryRange> &VertexPool::getOccupiedVertexRanges() {
-    return occupiedVertexRanges;
-}
-
-ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange> &occupiedRanges,
-                                                     std::vector<ChunkMemoryRange> &freeMemoryRanges, uint32_t chunkID,
-                                                     const uint16_t objectCount) {
-    const auto requiredObjects = *std::lower_bound(powersOfTwo.begin(), powersOfTwo.end(), objectCount);
+ChunkMemoryRange &VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange> &occupiedRanges,
+                                                      std::vector<ChunkMemoryRange> &freeMemoryRanges, uint32_t chunkID,
+                                                      uint32_t requiredVertices) {
     // if the chunk has already been allocated memory, and it is enough space to save the new mesh, save it
     // otherwise, free up the chunk's occupied range and move on
     if (occupiedRanges.contains(chunkID)) {
         ChunkMemoryRange &occupiedRange = occupiedRanges.at(chunkID);
 
-        if (occupiedRange.endPos - occupiedRange.startPos >= requiredObjects) {
-            initMemoryRangeInfo(occupiedRange, objectCount);
+        if (occupiedRange.endPos - occupiedRange.startPos >= requiredVertices) {
             return occupiedRange;
         }
 
@@ -49,13 +51,13 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t
     for (auto it = freeMemoryRanges.begin(); it != freeMemoryRanges.end(); ++it) {
         uint32_t sizeOfRange = it->endPos - it->startPos;
 
-        if (sizeOfRange == requiredObjects) {
+        if (sizeOfRange == requiredVertices) {
             suitableRange = &*it;
             eraseRangeIterator = it;
             break;
         }
 
-        if (sizeOfRange > requiredObjects && sizeOfRange < bestSplittableRangeSize) {
+        if (sizeOfRange > requiredVertices && sizeOfRange < bestSplittableRangeSize) {
             splittableRange = &*it;
             bestSplittableRangeSize = sizeOfRange;
             eraseRangeIterator = it;
@@ -70,35 +72,36 @@ ChunkMemoryRange VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t
     } else if (splittableRange != nullptr) {
         rangeToUse = *splittableRange;
         freeMemoryRanges.erase(eraseRangeIterator);
-        rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &rangeToUse, requiredObjects);
+        rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &rangeToUse, requiredVertices);
     } else {
         const ChunkMemoryRange resizedRange = resizePool();
-        rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &resizedRange, requiredObjects);
+        rangeToUse = splitUpAvailableMemory(freeMemoryRanges, &resizedRange, requiredVertices);
     }
 
-    initMemoryRangeInfo(rangeToUse, objectCount);
     occupiedRanges[chunkID] = rangeToUse;
-    return rangeToUse;
+    return occupiedRanges[chunkID];
 }
 
-void VertexPool::initMemoryRangeInfo(ChunkMemoryRange &rangeToUse, uint32_t objectCount) {
-    rangeToUse.indexCount = objectCount + objectCount / 2;
-    rangeToUse.vertexCount = objectCount;
-    rangeToUse.savedToVBuffer = false;
+uint32_t VertexPool::getAmountOfIndices(uint32_t vertexCount) {
+    return vertexCount + vertexCount / 2;
 }
 
 // required slot must be power of 2
 // returns a memory range == required space, and adds the rest from the split to the free ranges
 ChunkMemoryRange VertexPool::splitUpAvailableMemory(std::vector<ChunkMemoryRange> &freeMemoryRanges,
                                                     const ChunkMemoryRange *rangeToSplit, uint32_t requiredSpace) {
-    const ChunkMemoryRange newRange{rangeToSplit->startPos, rangeToSplit->startPos + requiredSpace, 0, 0, false};
+    const ChunkMemoryRange newRange{
+        rangeToSplit->startPos, rangeToSplit->startPos + requiredSpace, 0, 0, false, {0, 0, 0, 0, 0, 0}
+    };
 
     uint32_t remainingSpace = rangeToSplit->endPos - (rangeToSplit->startPos + requiredSpace);
     uint32_t nextRangeStartPos = rangeToSplit->startPos + requiredSpace;
     uint32_t currentPowerOf2 = requiredSpace;
 
     while (remainingSpace > 0) {
-        freeMemoryRanges.push_back({nextRangeStartPos, nextRangeStartPos + currentPowerOf2, 0, 0, false});
+        freeMemoryRanges.push_back({
+            nextRangeStartPos, nextRangeStartPos + currentPowerOf2, 0, 0, false, {0, 0, 0, 0, 0, 0}
+        });
         remainingSpace -= currentPowerOf2;
         nextRangeStartPos += currentPowerOf2;
         currentPowerOf2 *= 2;
@@ -114,5 +117,28 @@ ChunkMemoryRange VertexPool::resizePool() {
     const uint32_t currentSize = globalChunkVertices.size();
     const uint32_t goalSize = currentSize + CHUNK_VERTICES_SIZE;
     globalChunkVertices.resize(goalSize);
-    return {currentSize, goalSize, 0, 0, false};
+    return {currentSize, goalSize, 0, 0, false, {0, 0, 0, 0, 0, 0}};
+}
+
+std::unordered_map<uint32_t, ChunkMemoryRange> &VertexPool::getOccupiedVertexRanges() {
+    return occupiedVertexRanges;
+}
+
+uint32_t VertexPool::getIndexCount(ChunkMemoryRange memoryRange, int face) {
+    switch (face) {
+        case 0:
+            return getAmountOfIndices(memoryRange.faceOffsets[1]);
+        case 1:
+            return getAmountOfIndices(memoryRange.faceOffsets[2] - memoryRange.faceOffsets[1]);
+        case 2:
+            return getAmountOfIndices(memoryRange.faceOffsets[3] - memoryRange.faceOffsets[2]);
+        case 3:
+            return getAmountOfIndices(memoryRange.faceOffsets[4] - memoryRange.faceOffsets[3]);
+        case 4:
+            return getAmountOfIndices(memoryRange.faceOffsets[5] - memoryRange.faceOffsets[4]);
+        case 5:
+            return getAmountOfIndices(memoryRange.vertexCount - memoryRange.faceOffsets[5]);
+        default:
+            throw std::runtime_error("error! incorrect face number entered into getIndexCount!");
+    }
 }
