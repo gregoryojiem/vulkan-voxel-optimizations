@@ -37,6 +37,7 @@ void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentF
     if (VertexPool::getOccupiedVertexRanges().empty()) {
         return;
     }
+    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 
     const VkBuffer vertexBuffers[] = {vertexBuffer};
     constexpr VkDeviceSize offsets[] = {0};
@@ -46,30 +47,30 @@ void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentF
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
                             0, 1, &descriptorSets[currentFrame], 0, nullptr);
-    const uint32_t drawCount = VertexPool::getOccupiedVertexRanges().size();
-    vkCmdDrawIndexedIndirect(commandBuffer, drawParamsBuffer, 0, drawCount, sizeof(VkDrawIndexedIndirectCommand));
 
-    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+    const uint32_t drawCount = VertexPool::getOccupiedVertexRanges().size() * VISIBLE_BLOCK_SIDES;
+    vkCmdDrawIndexedIndirect(commandBuffer, drawParamsBuffer, 0, drawCount, sizeof(VkDrawIndexedIndirectCommand));
 }
 
-void ChunkRenderer::fillChunkIndices(std::vector<uint32_t>& indices) {
+void ChunkRenderer::fillChunkIndices(std::vector<uint32_t> &indices) {
     int indexStartPos = 0;
     for (uint32_t i = 0; i < indices.size(); i += 6) {
         indices.at(i) = indexStartPos;
-        indices.at(i+1) = indexStartPos+2;
-        indices.at(i+2) = indexStartPos+1;
-        indices.at(i+3) = indexStartPos+3;
-        indices.at(i+4) = indexStartPos+1;
-        indices.at(i+5) = indexStartPos+2;
+        indices.at(i + 1) = indexStartPos + 2;
+        indices.at(i + 2) = indexStartPos + 1;
+        indices.at(i + 3) = indexStartPos + 3;
+        indices.at(i + 4) = indexStartPos + 1;
+        indices.at(i + 5) = indexStartPos + 2;
         indexStartPos += 4;
     }
 }
 
 void ChunkRenderer::resizeBuffers() {
     uint32_t verticesSize = sizeof(globalChunkVertices[0]) * globalChunkVertices.size();
-    uint32_t drawParamsSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedVertexRanges().size();
+    uint32_t drawParamsSize = sizeof(VkDrawIndexedIndirectCommand) * VertexPool::getOccupiedVertexRanges().size() *
+                              VISIBLE_BLOCK_SIDES;
 
-    //todo benchmark with fixed size buffers here
+    //todo benchmark to see if fixed size buffers here would be better for high update counts
     if (verticesSize > vertexMemorySize) {
         vertexMemorySize = verticesSize;
         createVertexBuffer(vertexBuffer, vertexBufferMemory, vertexMemorySize, globalChunkVertices);
@@ -82,12 +83,12 @@ void ChunkRenderer::resizeBuffers() {
 }
 
 void ChunkRenderer::updateBuffers() const {
+    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size());
     if (!VertexPool::newUpdate) {
         return;
     }
     updateChunkBuffer(vertexBuffer, vertexStagingBuffer, vertexStagingBufferMemory, globalChunkVertices.data(),
                       vertexMemorySize, sizeof(ChunkVertex), VertexPool::getOccupiedVertexRanges());
-    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size());
     VertexPool::newUpdate = false;
 }
 

@@ -6,6 +6,8 @@
 
 #include "vulkan/VulkanStructs.h"
 
+constexpr int VISIBLE_BLOCK_SIDES = 6;
+
 class ChunkRenderer {
 public:
     void init(VkDescriptorPool &descriptorPool, VkRenderPass &renderPass);

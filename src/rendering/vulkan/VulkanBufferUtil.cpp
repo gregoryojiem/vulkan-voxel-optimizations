@@ -253,16 +253,17 @@ void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize buf
 
     uint32_t commandIndex = 0;
     for (auto &[chunkID, memoryRange]: VertexPool::getOccupiedVertexRanges()) {
-        VkDrawIndexedIndirectCommand command;
-        command.indexCount = memoryRange.indexCount;
-        command.instanceCount = 1;
-        command.firstIndex = 0;
-        command.vertexOffset = static_cast<int32_t>(memoryRange.startPos);
-        command.firstInstance = 0;
-        memcpy(static_cast<char *>(data) + commandIndex * sizeof(VkDrawIndexedIndirectCommand),
-               &command,
-               sizeof(VkDrawIndexedIndirectCommand));
-        commandIndex++;
+        for (int face = 0; face < 6; face++) {
+            VkDrawIndexedIndirectCommand command;
+            command.indexCount = VertexPool::getIndexCount(memoryRange, face);
+            command.instanceCount = 1;
+            command.firstIndex = 0;
+            command.vertexOffset = static_cast<int32_t>(memoryRange.startPos + memoryRange.faceOffsets[face]);
+            command.firstInstance = 0;
+            memcpy(static_cast<char *>(data) + commandIndex * sizeof(VkDrawIndexedIndirectCommand), &command,
+                   sizeof(VkDrawIndexedIndirectCommand));
+            commandIndex++;
+        }
     }
 
     vkUnmapMemory(CoreRenderer::device, bufferMemory);
