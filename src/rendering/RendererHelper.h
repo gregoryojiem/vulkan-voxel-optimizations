@@ -1,5 +1,5 @@
-#ifndef MAINRENDERER_H
-#define MAINRENDERER_H
+#ifndef RENDERERHELPER_H
+#define RENDERERHELPER_H
 #include "CoreRenderer.h"
 #include "ChunkRenderer.h"
 #include "TextRenderer.h"
@@ -16,10 +16,10 @@ public:
     static GLFWwindow *getWindow();
 
 private:
-    Camera camera;
+    Camera camera{};
     CoreRenderer coreRenderer;
     ChunkRenderer chunkRenderer;
     TextRenderer textRenderer;
 };
 
-#endif //MAINRENDERER_H
+#endif //RENDERERHELPER_H

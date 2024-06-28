@@ -3,7 +3,7 @@
 #include <thread>
 
 #include "core/World.h"
-#include "rendering/MainRenderer.h"
+#include "rendering/RendererHelper.h"
 
 MainRenderer mainRenderer;
 World world;

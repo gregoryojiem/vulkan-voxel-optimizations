@@ -56,8 +56,8 @@ add_executable(vulkan_voxel
         src/rendering/vulkan/VulkanBufferUtil.h
         src/rendering/CoreRenderer.cpp
         src/rendering/CoreRenderer.h
-        src/rendering/MainRenderer.cpp
-        src/rendering/MainRenderer.h
+        src/rendering/RendererHelper.cpp
+        src/rendering/RendererHelper.h
         src/rendering/vulkan/VulkanStructs.h
         src/core/Chunk.cpp
         src/core/Chunk.h

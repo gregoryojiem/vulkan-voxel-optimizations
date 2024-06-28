@@ -31,13 +31,13 @@ void ChunkRenderer::init(VkDescriptorPool &descriptorPool, VkRenderPass &renderP
     createStagingBuffer(vertexStagingBuffer, vertexStagingBufferMemory, vertexMemorySize);
 }
 
-void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo) {
+void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const Camera &camera) {
     resizeBuffers();
-    updateBuffers(ubo);
+    updateBuffers(camera);
     if (VertexPool::getOccupiedVertexRanges().empty()) {
         return;
     }
-    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+    memcpy(uniformBuffersMapped[currentFrame], &camera.ubo, sizeof(camera.ubo));
 
     const VkBuffer vertexBuffers[] = {vertexBuffer};
     constexpr VkDeviceSize offsets[] = {0};
@@ -82,8 +82,10 @@ void ChunkRenderer::resizeBuffers() {
     }
 }
 
-void ChunkRenderer::updateBuffers(const UniformBufferObject &ubo) const {
+void ChunkRenderer::updateBuffers(const Camera &camera) const {
     bool facesToRender[6] = {true, true, true, true, true, true};
+    Frustrum frustrum = camera.createFrustrum();
+    frustrum = {};
     updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size(), facesToRender);
     if (!VertexPool::newUpdate) {
         return;
