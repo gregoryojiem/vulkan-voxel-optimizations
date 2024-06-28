@@ -16,7 +16,7 @@ void VertexPool::addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], con
                                  uint32_t vertexCount, uint32_t chunkID) {
     const uint32_t requiredVertices = *std::lower_bound(powersOfTwo.begin(), powersOfTwo.end(), vertexCount);
     ChunkMemoryRange &vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
-                                                                 vertexCount);
+                                                                 requiredVertices);
     vertexRangeToUse.indexCount = getAmountOfIndices(vertexCount);
     vertexRangeToUse.vertexCount = vertexCount;
     vertexRangeToUse.savedToVBuffer = false;
