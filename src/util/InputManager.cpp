@@ -71,7 +71,7 @@ void InputHandler::updateMouse(__attribute__((unused)) GLFWwindow *window, int b
 
 void InputHandler::updateCursor(GLFWwindow *window, double xpos, double ypos) {
     currentInputs.xDelta = xpos - lastPosX;
-    currentInputs.yDelta = ypos - lastPosY;
+    currentInputs.yDelta = lastPosY - ypos; //invert y so positive xDelta equals moving the mouse upwards
     lastPosX = xpos;
     lastPosY = ypos;
     if (currentInputs.xDelta > 100) {
