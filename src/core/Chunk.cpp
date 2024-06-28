@@ -4,6 +4,9 @@ OctreeNode::OctreeNode(const glm::vec3 &nodePosition) : position(nodePosition) {
 }
 
 OctreeNode::~OctreeNode() {
+    if (isLeafNode) {
+        return;
+    }
     for (const auto &i: children) {
         delete i;
     }
