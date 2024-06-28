@@ -20,7 +20,7 @@ void MainRenderer::draw() {
     const uint32_t frame = CoreRenderer::currentFrame;
     VkCommandBuffer commandBuffer = CoreRenderer::commandBuffers[frame];
     CoreRenderer::beginRenderPass(commandBuffer, imageIndex);
-    chunkRenderer.draw(commandBuffer, frame, Camera::ubo);
+    chunkRenderer.draw(commandBuffer, frame, camera.ubo);
     textRenderer.draw(CoreRenderer::device, commandBuffer, frame, TimeManager::queryFPS());
     CoreRenderer::finishDraw(imageIndex);
 }

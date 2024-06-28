@@ -33,7 +33,7 @@ void ChunkRenderer::init(VkDescriptorPool &descriptorPool, VkRenderPass &renderP
 
 void ChunkRenderer::draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo) {
     resizeBuffers();
-    updateBuffers();
+    updateBuffers(ubo);
     if (VertexPool::getOccupiedVertexRanges().empty()) {
         return;
     }
@@ -82,8 +82,9 @@ void ChunkRenderer::resizeBuffers() {
     }
 }
 
-void ChunkRenderer::updateBuffers() const {
-    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size());
+void ChunkRenderer::updateBuffers(const UniformBufferObject &ubo) const {
+    bool facesToRender[6] = {true, true, true, true, true, true};
+    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size(), facesToRender);
     if (!VertexPool::newUpdate) {
         return;
     }
