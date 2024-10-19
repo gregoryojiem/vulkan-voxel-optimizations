@@ -23,19 +23,19 @@ public:
     static bool newUpdate;
 
     static void addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], const uint32_t faceOffsets[6],
-                                uint32_t vertexCount, uint32_t chunkID);
+                                const glm::vec3 &chunkID, uint32_t vertexCount);
 
-    static std::unordered_map<uint32_t, ChunkMemoryRange> &getOccupiedVertexRanges();
+    static std::unordered_map<glm::vec3, ChunkMemoryRange> &getOccupiedVertexRanges();
 
     static uint32_t getIndexCount(ChunkMemoryRange memoryRange, int face);
 
 private:
-    static std::unordered_map<uint32_t, ChunkMemoryRange> occupiedVertexRanges;
+    static std::unordered_map<glm::vec3, ChunkMemoryRange> occupiedVertexRanges;
     static std::vector<ChunkMemoryRange> freeVertexRanges;
 
-    static ChunkMemoryRange &getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange> &occupiedRanges,
-                                                    std::vector<ChunkMemoryRange> &freeMemoryRanges, uint32_t chunkID,
-                                                    uint32_t requiredVertices);
+    static ChunkMemoryRange &getAvailableMemoryRange(std::unordered_map<glm::vec3, ChunkMemoryRange> &occupiedRanges,
+                                                     std::vector<ChunkMemoryRange> &freeMemoryRanges,
+                                                     const glm::vec3 &chunkID, uint32_t requiredVertices);
 
     static ChunkMemoryRange splitUpAvailableMemory(std::vector<ChunkMemoryRange> &freeMemoryRanges,
                                                    const ChunkMemoryRange *rangeToSplit, uint32_t requiredSpace);

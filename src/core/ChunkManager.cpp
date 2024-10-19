@@ -386,7 +386,7 @@ int ChunkManager::meshAllChunks() {
 
             TimeManager::startTimer("addToVertexPool");
             if (vertexCount > 0) {
-                VertexPool::addToVertexPool(chunkVertices, faceOffsets, vertexCount, chunk.ID);
+                VertexPool::addToVertexPool(chunkVertices, faceOffsets, position, vertexCount);
             }
             TimeManager::addTimeToProfiler("addToVertexPool", TimeManager::finishTimer("addToVertexPool"));
             totalVertexCount += vertexCount;

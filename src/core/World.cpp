@@ -19,7 +19,7 @@ uint32_t World::generateTerrainFromNoise(const int range) {
             float noiseInfo = noise.GetNoise(static_cast<float>(x), static_cast<float>(z));
             noiseInfo = (noiseInfo + 1) / 2;
 
-            const int height = static_cast<int>(noiseInfo * 10);
+            const int height = static_cast<int>(noiseInfo * 30);
             for (int y = 0; y <= height; y++) {
                 int redBlueColor = (y * 4) / 8 * 8;
                 int greenColor = (y * 4 + 50) / 8 * 8;
@@ -42,7 +42,7 @@ uint32_t World::generateTerrainFromNoise(const int range) {
 void World::init() {
     noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
-    int range = 5000;
+    int range = 500;
     std::cout << "Started generating terrain! ";
 
     TimeManager::startTimer("generateTerrain");

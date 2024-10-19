@@ -171,7 +171,7 @@ void copyBuffer(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, VkDeviceSi
 }
 
 void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, uint32_t objectSize,
-                      std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges) {
+                      std::unordered_map<glm::vec3, ChunkMemoryRange> &memoryRanges) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     std::vector<VkBufferCopy> rangesToCopy;
     for (auto &[chunkID, memoryRange]: memoryRanges) {
@@ -221,7 +221,7 @@ void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, const V
 
 void updateChunkBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, const VkDeviceMemory &stagingBufferMemory,
                        void *newData, VkDeviceSize bufferSize, uint32_t objectSize,
-                       std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges) {
+                       std::unordered_map<glm::vec3, ChunkMemoryRange> &memoryRanges) {
     void *data;
     vkMapMemory(CoreRenderer::device, stagingBufferMemory, 0, bufferSize, 0, &data);
 
@@ -243,17 +243,22 @@ void updateChunkBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer, co
     copyBufferRanges(stagingBuffer, buffer, objectSize, memoryRanges);
 }
 
-void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize) {
+void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize, const Frustrum &frustrum, const glm::vec3 &frontVec) {
     if (bufferSize == 0) {
         return;
     }
 
     void *data;
     vkMapMemory(CoreRenderer::device, bufferMemory, 0, bufferSize, 0, &data);
-
     uint32_t commandIndex = 0;
     for (auto &[chunkID, memoryRange]: VertexPool::getOccupiedVertexRanges()) {
         for (int face = 0; face < 6; face++) {
+            if (face == 0 && frontVec.y < 0) {
+                continue;
+            }
+            if (face == 1 && frontVec.y > 0) {
+                continue;
+            }
             VkDrawIndexedIndirectCommand command;
             command.indexCount = VertexPool::getIndexCount(memoryRange, face);
             command.instanceCount = 1;

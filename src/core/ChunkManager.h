@@ -2,9 +2,9 @@
 #define CHUNKMANAGER_H
 
 #include <unordered_map>
-#include <vector>
-#include <functional>
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 #include "Block.h"
 #include "Chunk.h"
@@ -21,16 +21,6 @@ struct AdjacentChunkBounds {
     int8_t zOffset;
 
     AdjacentChunkBounds(int xOffset, int yOffset, int zOffset);
-};
-
-// hash function for vec3s so they can be used in the unordered map of ChunkManager
-template<>
-struct std::hash<glm::vec3> {
-    std::size_t operator()(const glm::vec3 &v) const noexcept {
-        return std::hash<float>()(v.x) ^
-               std::hash<float>()(v.y) ^
-               std::hash<float>()(v.z);
-    }
 };
 
 class ChunkManager {

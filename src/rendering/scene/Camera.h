@@ -1,23 +1,11 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <array>
+
 #include "GLFW/glfw3.h"
 #include "../vulkan/VulkanStructs.h"
 #include "../../util/InputManager.h"
-
-struct Plane {
-    glm::vec3 normal;
-    glm::vec3 distFromOrigin;
-};
-
-struct Frustrum {
-    Plane bottom;
-    Plane top;
-    Plane left;
-    Plane right;
-    Plane near;
-    Plane far;
-};
 
 class Camera {
 public:
@@ -33,6 +21,10 @@ public:
 
     void updateAspect(uint32_t width, uint32_t height);
 
+    [[nodiscard]] glm::vec3 getFrontVec() const;
+
+    [[nodiscard]] Frustrum createFrustrum() const;
+
 private:
     glm::vec3 position{};
     glm::vec3 up{};
@@ -45,8 +37,6 @@ private:
     float movementSpeed{};
     float horzMouseSens{};
     float vertMouseSens{};
-
-    [[nodiscard]] glm::vec3 getFrontVec() const;
 };
 
 #endif //CAMERA_H

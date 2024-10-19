@@ -83,10 +83,9 @@ void ChunkRenderer::resizeBuffers() {
 }
 
 void ChunkRenderer::updateBuffers(const Camera &camera) const {
-    bool facesToRender[6] = {true, true, true, true, true, true};
     Frustrum frustrum = camera.createFrustrum();
-    frustrum = {};
-    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size(), facesToRender);
+    updateDrawParamsBuffer(drawParamsBufferMemory, VertexPool::getOccupiedVertexRanges().size(), frustrum,
+                           camera.getFrontVec());
     if (!VertexPool::newUpdate) {
         return;
     }

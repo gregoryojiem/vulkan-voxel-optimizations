@@ -1,19 +1,22 @@
 #include "VertexPool.h"
 
 #include <iostream>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 const static std::vector<uint32_t> powersOfTwo = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
 static constexpr size_t CHUNK_VERTICES_SIZE = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 32; //must be a power of two
 
+
 std::vector<ChunkVertex> globalChunkVertices(CHUNK_VERTICES_SIZE);
-std::unordered_map<uint32_t, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
+std::unordered_map<glm::vec3, ChunkMemoryRange> VertexPool::occupiedVertexRanges;
 std::vector<ChunkMemoryRange> VertexPool::freeVertexRanges = {
     {0, CHUNK_VERTICES_SIZE, 0, 0, false, {0, 0, 0, 0, 0, 0}}
 };
 bool VertexPool::newUpdate;
 
 void VertexPool::addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], const uint32_t faceOffsets[6],
-                                 uint32_t vertexCount, uint32_t chunkID) {
+                                 const glm::vec3 &chunkID, uint32_t vertexCount) {
     const uint32_t requiredVertices = *std::lower_bound(powersOfTwo.begin(), powersOfTwo.end(), vertexCount);
     ChunkMemoryRange &vertexRangeToUse = getAvailableMemoryRange(occupiedVertexRanges, freeVertexRanges, chunkID,
                                                                  requiredVertices);
@@ -25,9 +28,9 @@ void VertexPool::addToVertexPool(const ChunkVertex chunkVertices[MAX_QUADS], con
     newUpdate = true;
 }
 
-ChunkMemoryRange &VertexPool::getAvailableMemoryRange(std::unordered_map<uint32_t, ChunkMemoryRange> &occupiedRanges,
-                                                      std::vector<ChunkMemoryRange> &freeMemoryRanges, uint32_t chunkID,
-                                                      uint32_t requiredVertices) {
+ChunkMemoryRange &VertexPool::getAvailableMemoryRange(std::unordered_map<glm::vec3, ChunkMemoryRange> &occupiedRanges,
+                                                      std::vector<ChunkMemoryRange> &freeMemoryRanges,
+                                                      const glm::vec3 &chunkID, uint32_t requiredVertices) {
     // if the chunk has already been allocated memory, and it is enough space to save the new mesh, save it
     // otherwise, free up the chunk's occupied range and move on
     if (occupiedRanges.contains(chunkID)) {
@@ -120,7 +123,7 @@ ChunkMemoryRange VertexPool::resizePool() {
     return {currentSize, goalSize, 0, 0, false, {0, 0, 0, 0, 0, 0}};
 }
 
-std::unordered_map<uint32_t, ChunkMemoryRange> &VertexPool::getOccupiedVertexRanges() {
+std::unordered_map<glm::vec3, ChunkMemoryRange> &VertexPool::getOccupiedVertexRanges() {
     return occupiedVertexRanges;
 }
 

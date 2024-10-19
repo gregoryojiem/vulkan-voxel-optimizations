@@ -1,11 +1,14 @@
 #ifndef VULKANBUFFERUTIL_H
 #define VULKANBUFFERUTIL_H
 
+#include <functional>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "VulkanStructs.h"
 #include "../scene/VertexPool.h"
 
 // OBJECT CREATION FUNCTIONS
@@ -24,7 +27,7 @@ extern void createUniformBuffers(std::vector<VkBuffer> &uniformBuffers,
                                  std::vector<VkDeviceMemory> &uniformBuffersMemory,
                                  std::vector<void *> &uniformBuffersMapped);
 
-extern void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void* newData, int width, int height);
+extern void createShaderImage(VkImage &image, VkDeviceMemory &imageMemory, void *newData, int width, int height);
 
 extern void createShaderImageFromFile(VkImage &image, VkDeviceMemory &imageMemory, int &width, int &height,
                                       const std::string &path);
@@ -36,7 +39,7 @@ extern void destroyBuffer(const VkBuffer &buffer, const VkDeviceMemory &bufferMe
 extern void copyBuffer(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, VkDeviceSize size);
 
 extern void copyBufferRanges(const VkBuffer &srcBuffer, const VkBuffer &dstBuffer, uint32_t objectSize,
-                             std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges);
+                             std::unordered_map<glm::vec3, ChunkMemoryRange> &memoryRanges);
 
 extern void copyBufferToImage(const VkBuffer &buffer, const VkImage &image, uint32_t width, uint32_t height);
 
@@ -46,8 +49,9 @@ extern void updateBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer,
 extern void updateChunkBuffer(const VkBuffer &buffer, const VkBuffer &stagingBuffer,
                               const VkDeviceMemory &stagingBufferMemory,
                               void *newData, VkDeviceSize bufferSize, uint32_t objectSize,
-                              std::unordered_map<uint32_t, ChunkMemoryRange> &memoryRanges);
+                              std::unordered_map<glm::vec3, ChunkMemoryRange> & memoryRanges);
 
-extern void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize);
+extern void updateDrawParamsBuffer(const VkDeviceMemory &bufferMemory, VkDeviceSize bufferSize,
+                                   const Frustrum &frustrum, const glm::vec3 &frontVec);
 
 #endif //VULKANBUFFERUTIL_H

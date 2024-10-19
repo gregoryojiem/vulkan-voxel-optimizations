@@ -24,4 +24,19 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 proj;
 };
 
+struct Plane {
+    glm::vec3 normal;
+    glm::vec3 distFromOrigin;
+};
+
+struct Frustrum {
+    Plane bottom;
+    Plane top;
+    Plane left;
+    Plane right;
+    Plane near;
+    Plane far;
+};
+
+
 #endif //VULKANSTRUCTS_H

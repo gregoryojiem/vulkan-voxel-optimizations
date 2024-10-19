@@ -79,3 +79,21 @@ glm::vec3 Camera::getFrontVec() const {
     front.z = -static_cast<float>(glm::cos(glm::radians(yaw)) * cos(glm::radians(pitch)));
     return glm::normalize(front);
 }
+
+//concepts here were based on https://learnopengl.com/Guest-Articles/2021/Scene/Frustum-Culling
+Frustrum Camera::createFrustrum() const {
+    Frustrum frustrum{};
+    const glm::vec3 front = getFrontVec();
+    glm::vec3 right = glm::normalize(glm::cross(up, front));
+    const glm::vec3 farQuadExtent = zFar * front;
+    const float halfFarQuadHeight = tanf(fovY * 0.5f) * zFar;
+    const float halfFarQuadWidth = halfFarQuadHeight * aspect;
+
+    frustrum.near = {front, position + zNear * front};
+    frustrum.far = {-front, position + zFar * front};
+    frustrum.left = {glm::cross(up, glm::normalize(farQuadExtent - right * halfFarQuadWidth)), position};
+    frustrum.right = {glm::cross(glm::normalize(farQuadExtent + right * halfFarQuadWidth), up), position};
+    frustrum.bottom = {glm::cross(glm::normalize(farQuadExtent - up * halfFarQuadHeight), right), position};
+    frustrum.top = {glm::cross(right, glm::normalize(farQuadExtent + up * halfFarQuadHeight)), position};
+    return frustrum;
+}

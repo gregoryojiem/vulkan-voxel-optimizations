@@ -4,6 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <vector>
 
+#include "scene/Camera.h"
 #include "vulkan/VulkanStructs.h"
 
 constexpr int VISIBLE_BLOCK_SIDES = 6;
@@ -12,7 +13,7 @@ class ChunkRenderer {
 public:
     void init(VkDescriptorPool &descriptorPool, VkRenderPass &renderPass);
 
-    void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const UniformBufferObject &ubo);
+    void draw(const VkCommandBuffer &commandBuffer, uint32_t currentFrame, const Camera &ubo);
 
     void cleanup(const VkDevice &device, uint32_t maxFramesInFlight) const;
 
@@ -44,7 +45,7 @@ private:
 
     void resizeBuffers();
 
-    void updateBuffers() const;
+    void updateBuffers(const Camera &camera) const;
 };
 
 #endif //CHUNKRENDERER_H
